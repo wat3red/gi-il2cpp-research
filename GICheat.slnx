@@ -1,0 +1,8 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="GICheat/GICheat.vcxproj" Id="b7abc789-17ef-4faf-be1d-2699b377031a" />
+  <Project Path="Injector/Injector.vcxproj" Id="af3dbd40-2425-4aec-84a7-52095fb649a8" />
+</Solution>
