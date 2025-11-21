@@ -1,265 +1,109 @@
-﻿#include <stdint.h>
+﻿// dllmain.cpp
+
 #include <windows.h>
+#include <cstdio>
+#include <cinttypes>
+#include <cstdint>
 #include <iostream>
-#include <fstream>
 #include <unordered_map>
 #include <unordered_set>
 #include <mutex>
 #include <dbghelp.h>
 #include <psapi.h>
-
-#pragma comment(lib, "dbghelp.lib")
+#include <string>
+#include <stdarg.h>
+#include <io.h>
+#include <fcntl.h>
 
 #include "lib/minhook/include/MinHook.h"
 #include "il2cpp_types.h"
 
-struct Il2CppClassRaw {
-	uint32_t parent_index;         // +0x00
-	uint32_t name_index;           // +0x04
-	uint32_t namespace_index;      // +0x08
-};
+#pragma comment(lib, "dbghelp.lib")
 
+// Globals
 uintptr_t g_base = 0;
-typedef unsigned int uint32_t; // assume 32-bit unsigned int on your platform
-
-// STRING CACHE
-std::unordered_map<uint32_t, std::string> g_stringCache;
-std::mutex g_cacheMutex;
-void* il2cpp_defaults_corlib = 0;
-
-// CLASS DUMPER
-std::ofstream g_dumpFile;
+FILE* g_dumpFile = nullptr;
 std::mutex g_dumpMutex;
 
-// ORIGINAL FUNCTION POINTERS
-const char* (*o_DecrpytString)(uint32_t) = nullptr;
+// Function pointers
 void (*o_ClassInit)(__int64, __int64) = nullptr;
-void* (*Image_ClassFromName)(void* image, const char* namespaceName, const char* className) = nullptr;
-char (*o_InitIl2Cpp)(char* a1) = nullptr;
+MethodInfo* (*il2cpp_class_get_methods)(Il2CppClass* klass, void** iter) = nullptr;
+const char* (*il2cpp_class_get_name)(Il2CppClass* klass) = nullptr;
+const char* (*il2cpp_class_get_namespace)(Il2CppClass* klass) = nullptr;
+const char* (*il2cpp_method_get_name)(MethodInfo* method) = nullptr;
+const char* (*il2cpp_method_get_param_name)(MethodInfo* method, uint32_t index) = nullptr;
+uintptr_t(*DecryptParameters)(__int64 method) = nullptr;  // sub_451910
+Il2CppClass* (*Class_FromIl2CppType)(const Il2CppType* type) = nullptr;
 
-MethodInfo* (*il2cpp_class_get_methods)(Il2CppClass* klass, void** iter);
-
-extern "C" __declspec(noinline)
-bool seh_read_memory(uintptr_t addr, void* out, size_t size)
+// Logging helper: thread-safe, flushes libc buffers and OS buffers to disk
+void Log(const char* fmt, ...)
 {
-	__try {
-		memcpy(out, (void*)addr, size);
-		return true;
-	}
-	__except (EXCEPTION_EXECUTE_HANDLER) {
-		return false;
-	}
-}
+	static size_t counter = 0;
 
-static bool g_symsInit = false;
-
-void InitSymbols()
-{
-	if (!g_symsInit) {
-		SymInitialize(GetCurrentProcess(), NULL, TRUE);
-		g_symsInit = true;
-	}
-}
-
-void PrintStackTrace()
-{
-	InitSymbols();
-
-	HANDLE process = GetCurrentProcess();
-	HANDLE thread = GetCurrentThread();
-
-	CONTEXT context = {};
-	RtlCaptureContext(&context);
-
-	STACKFRAME64 frame = {};
-	DWORD machine = IMAGE_FILE_MACHINE_AMD64;
-
-	frame.AddrPC.Offset = context.Rip;
-	frame.AddrPC.Mode = AddrModeFlat;
-	frame.AddrFrame.Offset = context.Rbp;
-	frame.AddrFrame.Mode = AddrModeFlat;
-	frame.AddrStack.Offset = context.Rsp;
-	frame.AddrStack.Mode = AddrModeFlat;
-
-	g_dumpFile << "\n--- STACK TRACE ---\n";
-
-	for (int i = 0; i < 64; i++)
-	{
-		if (!StackWalk64(machine, process, thread, &frame, &context, NULL,
-			SymFunctionTableAccess64, SymGetModuleBase64, NULL))
-			break;
-
-		DWORD64 address = frame.AddrPC.Offset;
-		if (!address)
-			break;
-
-		// ---- Get module base ----
-		HMODULE hMod = (HMODULE)SymGetModuleBase64(process, address);
-
-		char moduleName[MAX_PATH] = "<unknown>";
-		DWORD64 moduleBase = 0;
-
-		if (hMod) {
-			moduleBase = (DWORD64)hMod;
-			GetModuleBaseNameA(process, hMod, moduleName, MAX_PATH);
-		}
-
-		DWORD64 rva = address - moduleBase;
-
-		// ---- Symbol resolution ----
-		char buffer[sizeof(SYMBOL_INFO) + 256];
-		PSYMBOL_INFO symbol = (PSYMBOL_INFO)buffer;
-		symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
-		symbol->MaxNameLen = 255;
-
-		bool hasSymbol = SymFromAddr(process, address, 0, symbol);
-
-		// ---- Output line ----
-		g_dumpFile << "[" << i << "] "
-			<< moduleName << " + 0x" << std::hex << rva
-			<< " (0x" << address << ")";
-
-		if (hasSymbol)
-			g_dumpFile << " -> " << symbol->Name;
-
-		g_dumpFile << std::endl;
-	}
-
-	g_dumpFile << "-------------------\n";
-}
-
-char __fastcall h_InitIl2Cpp(char* a1) {
-	char otp = o_InitIl2Cpp(a1);
-	g_dumpFile << "h_InitIl2Cpp\n";
-
-	PrintStackTrace();
-	return otp;
-}
-
-// HOOKED STRING DECRYPTION
-const char* __fastcall h_DecrpytString(uint32_t stringIndex) {
-	// Call original
-	const char* result = o_DecrpytString(stringIndex);
-
-	if (result && stringIndex != 0xFFFFFFFF) {
-		std::lock_guard<std::mutex> lock(g_cacheMutex);
-
-		// Cache the result
-		if (g_stringCache.find(stringIndex) == g_stringCache.end()) {
-			try {
-				std::string str(result);
-				g_stringCache[stringIndex] = str;
-			}
-			catch (...) {
-				g_stringCache[stringIndex] = "<error>";
-			}
-		}
-	}
-
-	return result;
-}
-
-template<typename T>
-bool SafeRead(uintptr_t addr, T& out)
-{
-	return seh_read_memory(addr, &out, sizeof(T));
-}
-
-std::string GetCachedString(uint32_t index) {
-	std::lock_guard<std::mutex> lock(g_cacheMutex);
-	auto it = g_stringCache.find(index);
-	if (it != g_stringCache.end()) {
-		return it->second;
-	}
-	return "";
-}
-
-// Decrypt string from raw metadata
-std::string DecryptStringFromRaw(Il2CppClassRaw* raw, uint32_t offset, uint32_t xorKey) {
-	if (!raw) return "<null_raw>";
-
-	uintptr_t fieldAddr = (uintptr_t)raw + offset;
-	uint32_t encryptedValue = 0;
-	if (!SafeRead(fieldAddr, encryptedValue)) {
-		return "<read_error>";
-	}
-
-	uint32_t xored = encryptedValue ^ xorKey;
-	//if (xored != 0xFFFFFFFF && xored < 0x10000000) {
-		// Try to get from cache first
-	std::string cached = GetCachedString(xored);
-	if (!cached.empty()) {
-		return cached;
-	}
-
-	// Call the decryption function
-	if (o_DecrpytString) {
-		const char* decrypted = o_DecrpytString(xored);
-		if (decrypted) {
-			std::string result(decrypted);
-			if (!result.empty() && result.length() < 200) {
-				return result;
-			}
-		}
-	}
-	//}
-
-	return "";
-}
-
-
-void DumpClassInfo(uintptr_t classPtr) {
 	std::lock_guard<std::mutex> lock(g_dumpMutex);
+	if (!g_dumpFile) return;
 
-	std::string className;
-	std::string namespaceName;
+	va_list ap;
+	va_start(ap, fmt);
+	vfprintf(g_dumpFile, fmt, ap);
+	va_end(ap);
 
-	const char* directName = nullptr;
+	if (++counter % 200 == 0)   // flush only every 200 lines
+		fflush(g_dumpFile);
+}
 
-	Il2CppClassRaw* rawPtr = nullptr;
-	SafeRead(classPtr + 0x10, rawPtr);
+void DumpClassInfo(Il2CppClass* classPtr) {
+	std::string className = il2cpp_class_get_name(classPtr);
+	std::string namespaceName = il2cpp_class_get_namespace(classPtr);
 
-	className = DecryptStringFromRaw(rawPtr, 0x04, 0x15B8D04D);
-	namespaceName = DecryptStringFromRaw(rawPtr, 0x08, 0x2E0C9972);
+	Log("\n// Namespace: %s\nclass %s \n{\n", namespaceName.c_str(), className.c_str());
 
-	// Construct full name
-	std::string fullName;
-	if (!className.empty()) {
-		fullName = (namespaceName.empty() ? "" : namespaceName + "::") + className;
-	}
-	else {
-		SafeRead(classPtr + 0x18, directName);
-		fullName = (namespaceName.empty() ? "" : namespaceName + "::") + directName + "(failed to retrieve class name by index, fallback)";
-	}
-
-	//Sleep(1111111111111);
-
-	printf("%p | %s\n", classPtr, fullName.c_str());
-
-	int a = 0;
-	std::cin >> a;
-
-	// Write to file
+	// sizeof MethodInfo = 0x38
 	void* iter = nullptr;
-	if (g_dumpFile.is_open()) {
-		il2cpp_class_get_methods(classPtr, iter);
+	while (MethodInfo* method = il2cpp_class_get_methods(classPtr, &iter)) {
+		uint8_t paramCount = *(uint8_t*)((uintptr_t)method + 0x2E);
 
-		g_dumpFile << "0x" << std::hex << classPtr << std::dec
-			<< " | " << fullName
-			<< "\n";
-		g_dumpFile.flush();
+		std::string paramList = "";
+		if (paramCount) {
+			uintptr_t decryptedParams = DecryptParameters((uintptr_t)method);
+			uintptr_t paramArray = decryptedParams + 0x8;
+
+			for (uint8_t i = 0; i < paramCount; i++) {
+				// Each parameter is 3 pointers (0x18 bytes)
+				uintptr_t param = paramArray + ((i - 1) * 0x18);
+				if (!param) continue;
+
+				const Il2CppType* paramType = *(Il2CppType**)(paramArray + (i * 0x18));
+				if (!paramType) continue;
+
+				const char* paramName = *(const char**)((uintptr_t)param + 0x10);
+				if (!paramName) continue;
+
+				Il2CppClass* paramClass = Class_FromIl2CppType(paramType);
+				if (!paramClass) continue;
+
+				paramList += il2cpp_class_get_name(paramClass) + std::string(" ") + (std::string)paramName + (i == paramCount - 1 ? "" : ", ");
+			}
+		}
+
+		Log("\t%s(%s) // RVA: %X\n", il2cpp_method_get_name(method), paramList.c_str(), (uintptr_t)method->methodPointer - g_base);
 	}
 }
 
-// CLASS INIT HOOK
-void __fastcall h_ClassInit(__int64 a1, __int64 a2) {
+void __fastcall h_ClassInit(__int64 a1, __int64 a2)
+{
+	// Call original
+
 	o_ClassInit(a1, a2);
 
+
 	// Dump class info after initialization
-	DumpClassInfo((uintptr_t)a1);
+	DumpClassInfo((Il2CppClass*)a1);
 }
 
-int Start() {
+// Thread entry: initialize console, open dump file, resolve function ptrs, hook
+DWORD WINAPI StartThread(LPVOID)
+{
 	AllocConsole();
 	FILE* fOut = nullptr;
 	FILE* fIn = nullptr;
@@ -267,61 +111,74 @@ int Start() {
 	freopen_s(&fOut, "CONOUT$", "w", stdout);
 	freopen_s(&fIn, "CONIN$", "r", stdin);
 	freopen_s(&fErr, "CONOUT$", "w", stderr);
-
-	// make sure C++ iostreams use stdio and are in a good state
 	std::ios::sync_with_stdio(true);
 	std::cin.clear();
 	std::cout.clear();
 	std::cerr.clear();
 
 	printf("=== IL2CPP Dumper ===\n\n");
-
 	g_base = (uintptr_t)GetModuleHandle(NULL);
 	printf("Game Base: 0x%p\n\n", (void*)g_base);
 
-	// Open dump file
-	g_dumpFile.open("il2cpp_complete_dump.txt", std::ios::out | std::ios::trunc);
-	if (g_dumpFile.is_open()) {
-		g_dumpFile << "IL2CPP Class Dump with Decrypted Namespaces\n";
-		g_dumpFile << "===========================================\n\n";
+	// open dump file (unbuffered to minimize lost data). If you want performance,
+	// change setvbuf call to _IOLBF or remove it and rely on manual flushes.
+	fopen_s(&g_dumpFile, "il2cpp_complete_dump.txt", "w");
+	if (!g_dumpFile) {
+		printf("Failed to open dump file!\n");
+	}
+	else {
+		// disable stdio buffering (safe but slower). Change to _IOLBF for line buffering.
+		setvbuf(g_dumpFile, NULL, _IONBF, 0);
+		Log("[*] Dump file opened. Game Base: 0x%p\n", (void*)g_base);
 	}
 
 	if (MH_Initialize() != MH_OK) {
 		printf("MinHook init failed!\n");
-		return -1;
+		return 1;
 	}
 
-	Image_ClassFromName = (decltype(Image_ClassFromName))(g_base + 0x43F250);
+	// Resolve known offsets (update offsets for your target)
 	il2cpp_class_get_methods = (decltype(il2cpp_class_get_methods))(g_base + 0x43A650);
-	
-
-	MH_CreateHook((LPVOID)(g_base + 0x45DC40), h_InitIl2Cpp, (void**)&o_InitIl2Cpp);
-
-	// Hook string decryption function
-	printf("\nHooking sub_438D10 (string decryption)...\n");
-	MH_CreateHook((LPVOID)(g_base + 0x438D10), h_DecrpytString, (void**)&o_DecrpytString);
+	il2cpp_class_get_name = (decltype(il2cpp_class_get_name))(g_base + 0x5A30);
+	il2cpp_class_get_namespace = (decltype(il2cpp_class_get_namespace))(g_base + 0x3DC160);
+	il2cpp_method_get_name = (decltype(il2cpp_method_get_name))(g_base + 0x3DCA60);
+	DecryptParameters = (decltype(DecryptParameters))(g_base + 0x451910); // sub_451910
+	Class_FromIl2CppType = (decltype(Class_FromIl2CppType))(g_base + 0x4373F0);
+	il2cpp_method_get_param_name = (decltype(il2cpp_method_get_param_name))(g_base + 0x3DCAC0);
 
 	// Hook class initialization
-	printf("Hooking Class::Init...\n");
-
+	Log("Hooking Class::Init...\n");
 	MH_CreateHook((LPVOID)(g_base + 0x43C7A0), h_ClassInit, (void**)&o_ClassInit);
-
 	MH_EnableHook(MH_ALL_HOOKS);
 
 	return 0;
 }
 
-BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
+// -----------------------------------------------------------------------------
+// DLL entry
+// -----------------------------------------------------------------------------
+BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
+{
 	if (ul_reason_for_call == DLL_PROCESS_ATTACH) {
 		DisableThreadLibraryCalls(hModule);
-		CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)Start, NULL, 0, NULL);
+		CreateThread(NULL, 0, StartThread, NULL, 0, NULL);
 	}
 	else if (ul_reason_for_call == DLL_PROCESS_DETACH) {
-		if (g_dumpFile.is_open()) {
-			g_dumpFile.close();
+		// flush + close dump file
+		if (g_dumpFile) {
+			fflush(g_dumpFile);
+			int fd = _fileno(g_dumpFile);
+			if (fd != -1) {
+				intptr_t osHandle = _get_osfhandle(fd);
+				if (osHandle != -1 && osHandle != (intptr_t)INVALID_HANDLE_VALUE) {
+					FlushFileBuffers((HANDLE)osHandle);
+				}
+			}
+			fclose(g_dumpFile);
+			g_dumpFile = nullptr;
 		}
+
 		MH_Uninitialize();
 	}
 	return TRUE;
 }
-
