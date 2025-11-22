@@ -26,14 +26,19 @@ FILE* g_dumpFile = nullptr;
 std::mutex g_dumpMutex;
 
 // Function pointers
-void (*o_ClassInit)(__int64, __int64) = nullptr;
 MethodInfo* (*il2cpp_class_get_methods)(Il2CppClass* klass, void** iter) = nullptr;
 const char* (*il2cpp_class_get_name)(Il2CppClass* klass) = nullptr;
 const char* (*il2cpp_class_get_namespace)(Il2CppClass* klass) = nullptr;
 const char* (*il2cpp_method_get_name)(MethodInfo* method) = nullptr;
 const char* (*il2cpp_method_get_param_name)(MethodInfo* method, uint32_t index) = nullptr;
-uintptr_t(*DecryptParameters)(__int64 method) = nullptr;  // sub_451910
+uintptr_t(*il2cpp_method_get_params)(MethodInfo* method) = nullptr;
+Il2CppType* (*il2cpp_method_get_return_type)(MethodInfo* method) = nullptr;
+
+FieldInfo* (*il2cpp_class_get_fields)(Il2CppClass* klass, void** iter) = nullptr;
+const char* (*il2cpp_field_get_name)(FieldInfo* field) = nullptr;
+
 Il2CppClass* (*Class_FromIl2CppType)(const Il2CppType* type) = nullptr;
+void (*o_ClassInit)(__int64, __int64) = nullptr;
 
 // Logging helper: thread-safe, flushes libc buffers and OS buffers to disk
 void Log(const char* fmt, ...)
@@ -56,18 +61,67 @@ void DumpClassInfo(Il2CppClass* classPtr) {
 	std::string className = il2cpp_class_get_name(classPtr);
 	std::string namespaceName = il2cpp_class_get_namespace(classPtr);
 
-	Log("\n// Namespace: %s\nclass %s \n{\n", namespaceName.c_str(), className.c_str());
+	Log("// Namespace: %s\nclass %s \n{\n", namespaceName.c_str(), className.c_str());
 
-	// sizeof MethodInfo = 0x38
 	void* iter = nullptr;
 	while (MethodInfo* method = il2cpp_class_get_methods(classPtr, &iter)) {
 		uint8_t paramCount = *(uint8_t*)((uintptr_t)method + 0x2E);
+		int16_t slot = *(int16_t*)((uintptr_t)method + 0x2C);
+		uint16_t flags = *(uint16_t*)((uintptr_t)method + 0x2A);
+
+		// Parse access modifiers
+		uint16_t accessMask = flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK;
+		bool isPublic = (accessMask == METHOD_ATTRIBUTE_PUBLIC);
+		bool isPrivate = (accessMask == METHOD_ATTRIBUTE_PRIVATE);
+		bool isProtected = (accessMask == METHOD_ATTRIBUTE_FAMILY);
+		bool isInternal = (accessMask == METHOD_ATTRIBUTE_ASSEM);
+		bool isProtectedInternal = (accessMask == METHOD_ATTRIBUTE_FAM_OR_ASSEM);
+		bool isPrivateProtected = (accessMask == METHOD_ATTRIBUTE_FAM_AND_ASSEM);
+
+		// Parse method attributes
+		bool isStatic = (flags & METHOD_ATTRIBUTE_STATIC) != 0;
+		bool isFinal = (flags & METHOD_ATTRIBUTE_FINAL) != 0;
+		bool isVirtual = (flags & METHOD_ATTRIBUTE_VIRTUAL) != 0;
+		bool isAbstract = (flags & METHOD_ATTRIBUTE_ABSTRACT) != 0;
+		bool isNewSlot = (flags & METHOD_ATTRIBUTE_VTABLE_LAYOUT_MASK) != 0;
+
+		// Build modifiers string
+		std::string modifiers = "";
+
+		// Access level
+		if (isPublic) modifiers += "public ";
+		else if (isPrivate) modifiers += "private ";
+		else if (isProtectedInternal) modifiers += "protected internal ";
+		else if (isPrivateProtected) modifiers += "private protected ";
+		else if (isProtected) modifiers += "protected ";
+		else if (isInternal) modifiers += "internal ";
+
+		// Static
+		if (isStatic) modifiers += "static ";
+
+		// Abstract/Virtual/Override/Sealed
+		if (isAbstract) {
+			modifiers += "abstract ";
+		}
+		else if (isVirtual) {
+			if (slot != -1 && !isNewSlot) {
+				modifiers += "override ";
+			}
+			else {
+				modifiers += "virtual ";
+			}
+
+			if (isFinal) {
+				modifiers += "sealed ";
+			}
+		}
+		else if (isFinal && !isStatic) {
+			modifiers += "sealed ";
+		}
 
 		std::string paramList = "";
 		if (paramCount) {
-			uintptr_t decryptedParams = DecryptParameters((uintptr_t)method);
-			uintptr_t paramArray = decryptedParams + 0x8;
-
+			uintptr_t paramArray = il2cpp_method_get_params(method) + 0x8;
 			for (uint8_t i = 0; i < paramCount; i++) {
 				// Each parameter is 3 pointers (0x18 bytes)
 				uintptr_t param = paramArray + ((i - 1) * 0x18);
@@ -86,16 +140,29 @@ void DumpClassInfo(Il2CppClass* classPtr) {
 			}
 		}
 
-		Log("\t%s(%s) // RVA: %X\n", il2cpp_method_get_name(method), paramList.c_str(), (uintptr_t)method->methodPointer - g_base);
+		std::string returnTypeName = "unk";
+		Il2CppType* returnType = il2cpp_method_get_return_type(method);
+		if (returnType) {
+			Il2CppClass* rtClass = Class_FromIl2CppType(returnType);
+			if (rtClass) returnTypeName = il2cpp_class_get_name(rtClass);
+		}
+
+		Log("\t%s%s %s(%s); // Slot: %d, RVA: 0x%X, FLAGS: %X\n",
+			modifiers.c_str(),
+			returnTypeName.c_str(),
+			il2cpp_method_get_name(method),
+			paramList.c_str(),
+			slot,
+			(uintptr_t)method->methodPointer - g_base, flags);
+
 	}
+
+	Log("}\n\n");
 }
 
 void __fastcall h_ClassInit(__int64 a1, __int64 a2)
 {
-	// Call original
-
 	o_ClassInit(a1, a2);
-
 
 	// Dump class info after initialization
 	DumpClassInfo((Il2CppClass*)a1);
@@ -129,7 +196,6 @@ DWORD WINAPI StartThread(LPVOID)
 	else {
 		// disable stdio buffering (safe but slower). Change to _IOLBF for line buffering.
 		setvbuf(g_dumpFile, NULL, _IONBF, 0);
-		Log("[*] Dump file opened. Game Base: 0x%p\n", (void*)g_base);
 	}
 
 	if (MH_Initialize() != MH_OK) {
@@ -142,21 +208,20 @@ DWORD WINAPI StartThread(LPVOID)
 	il2cpp_class_get_name = (decltype(il2cpp_class_get_name))(g_base + 0x5A30);
 	il2cpp_class_get_namespace = (decltype(il2cpp_class_get_namespace))(g_base + 0x3DC160);
 	il2cpp_method_get_name = (decltype(il2cpp_method_get_name))(g_base + 0x3DCA60);
-	DecryptParameters = (decltype(DecryptParameters))(g_base + 0x451910); // sub_451910
-	Class_FromIl2CppType = (decltype(Class_FromIl2CppType))(g_base + 0x4373F0);
 	il2cpp_method_get_param_name = (decltype(il2cpp_method_get_param_name))(g_base + 0x3DCAC0);
 
+	il2cpp_method_get_params = (decltype(il2cpp_method_get_params))(g_base + 0x451910); // sub_451910
+	Class_FromIl2CppType = (decltype(Class_FromIl2CppType))(g_base + 0x4373F0);
+	il2cpp_method_get_return_type = (decltype(il2cpp_method_get_return_type))(g_base + 0x451660);
+
 	// Hook class initialization
-	Log("Hooking Class::Init...\n");
 	MH_CreateHook((LPVOID)(g_base + 0x43C7A0), h_ClassInit, (void**)&o_ClassInit);
 	MH_EnableHook(MH_ALL_HOOKS);
 
 	return 0;
 }
 
-// -----------------------------------------------------------------------------
 // DLL entry
-// -----------------------------------------------------------------------------
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
 	if (ul_reason_for_call == DLL_PROCESS_ATTACH) {

@@ -308,8 +308,8 @@ int wmain(int argc, wchar_t* argv[]) {
         return 1;
     }
 
-    std::wcout << L"Press any key to exit..." << std::endl;
-    std::cin.get();
+    //std::wcout << L"Press any key to exit..." << std::endl;
+    //std::cin.get();
 
     return 0;
 }
