@@ -234,12 +234,12 @@ public:
 
     bool Launch() {
         // Step 1: Disable internet
-        std::wcout << L"[*] Disabling internet..." << std::endl;
+        /*std::wcout << L"[*] Disabling internet..." << std::endl;
         if (!NetworkManager::SetInterfaceState(m_adapterName, false)) {
             std::wcout << L"Failed to disable network adapter." << std::endl;
             return false;
         }
-
+*/
         // Step 2: Launch game with DLL injection
         std::wcout << L"[*] Launching Genshin Impact..." << std::endl;
         if (!ProcessManager::StartProcessAndInjectDLL(m_gamePath, m_dllPath)) {
@@ -248,18 +248,18 @@ public:
             return false;
         }
 
-        // Step 3: Random delay between 4 and 7 seconds
-        std::srand(static_cast<unsigned int>(std::time(nullptr)));
-        int delay = (std::rand() % 4) + 4;
-        std::wcout << L"[*] Waiting " << delay << L" seconds before reconnecting internet..." << std::endl;
+        //// Step 3: Random delay between 4 and 7 seconds
+        //std::srand(static_cast<unsigned int>(std::time(nullptr)));
+        //int delay = (std::rand() % 4) + 4;
+        //std::wcout << L"[*] Waiting " << delay << L" seconds before reconnecting internet..." << std::endl;
 
-        Sleep(delay * 1000);
+        //Sleep(delay * 1000);
 
-        // Step 4: Re-enable internet
-        std::wcout << L"[*] Re-enabling internet..." << std::endl;
-        if (!NetworkManager::SetInterfaceState(m_adapterName, true)) {
-            std::wcout << L"Warning: Failed to re-enable network adapter." << std::endl;
-        }
+        //// Step 4: Re-enable internet
+        //std::wcout << L"[*] Re-enabling internet..." << std::endl;
+        //if (!NetworkManager::SetInterfaceState(m_adapterName, true)) {
+        //    std::wcout << L"Warning: Failed to re-enable network adapter." << std::endl;
+        //}
 
         std::wcout << L"[*] Done." << std::endl;
         return true;
@@ -312,4 +312,4 @@ int wmain(int argc, wchar_t* argv[]) {
     //std::cin.get();
 
     return 0;
-}
+}////////////////////////

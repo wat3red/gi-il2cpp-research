@@ -42,6 +42,9 @@
     <ClInclude Include="il2cpp_types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="sdk_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">

@@ -148,6 +148,7 @@
     <ClInclude Include="lib\minhook\src\hde\table32.h" />
     <ClInclude Include="lib\minhook\src\hde\table64.h" />
     <ClInclude Include="lib\minhook\src\trampoline.h" />
+    <ClInclude Include="sdk_types.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
