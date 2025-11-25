@@ -1,455 +1,431 @@
 #pragma once
 
 #include <Windows.h>
+#include "il2cpp_types.h"
 #include <string>
 #include <vector>
 
+namespace Il2Cpp {
+	template <typename T>
+	struct Array : Il2CppObject {
+		void* bounds;
+		int   max_length;
+		T array[65535];
+
+		T& operator [] (int i)
+		{
+			return array[i];
+		}
+
+		const T& operator [] (int i) const
+		{
+			return array[i];
+		}
+
+		bool Contains(T item)
+		{
+			for (int i = 0; i < max_length; i++)
+			{
+				if (array[i] == item) return true;
+			}
+			return false;
+		}
+	};
+}
+
 namespace Unity {
-    template <typename T>
-    struct monoArray
-    {
-        void* klass;
-        void* monitor;
-        void* bounds;
-        int   max_length;
-        T vector[65535];
+	template<typename T>
+	struct List : Il2CppObject {
+		Il2Cpp::Array<T>* items;
+		int32_t size;
+		int32_t version;
+	};
 
-        T& operator [] (int i)
-        {
-            return vector[i];
-        }
+	template<typename TKey, typename TValue>
+	struct Dictionary
+	{
+		struct KeysCollection;
+		struct ValueCollection;
 
-        const T& operator [] (int i) const
-        {
-            return vector[i];
-        }
+		struct Entry1
+		{
+			int hashCode;
+			int next;
+			TKey key;
+			void* valu;
+		};
 
-        bool Contains(T item)
-        {
-            for (int i = 0; i < max_length; i++)
-            {
-                if (vector[i] == item) return true;
-            }
-            return false;
-        }
-    };
+		void* kass;
+		void* monitor;
+		Il2Cpp::Array<int>* buckets;
+		Il2Cpp::Array<Entry1>* entries;
+		int count;
+		int version;
+		int freeList;
+		int freeCount;
+		void* comparer;
+		KeysCollection* keys;
+		ValueCollection* values;
+		void* _syncRoot;
 
-    template<typename T>
-    struct monoList {
-        void* unk0;
-        void* unk1;
-        monoArray<T>* items;
-        int size;
-        int version;
+		void* get_Comparer()
+		{
+			return comparer;
+		}
 
-        T getItems() {
-            return items->getPointer();
-        }
+		int get_Count()
+		{
+			return count;
+		}
 
-        int getSize() {
-            return size;
-        }
+		KeysCollection get_Keys()
+		{
+			if (!keys) keys = new KeysCollection(this);
+			return (*keys);
+		}
 
-        int getVersion() {
-            return version;
-        }
-    };
+		ValueCollection get_Values()
+		{
+			if (!values) values = new ValueCollection(this);
+			return (*values);
+		}
 
-    struct MonoArray {
-        void* object1;
-        void* object2;
-        int32_t length;
-        uint16_t chars[32];
-    };
+		TValue operator [] (TKey key)
+		{
+			int i = FindEntry(key);
+			if (i >= 0) return void* ((*entries)[i].valu);
+			return TValue();
+		}
 
-    template<typename T>
-    using Array = monoArray<T>;
+		const TValue operator [] (TKey key) const
+		{
+			int i = FindEntry(key);
+			if (i >= 0) return (*entries)[i].valu;
+			return TValue();
+		}
 
-    template<typename TKey, typename TValue>
-    struct Dictionary
-    {
-        struct KeysCollection;
-        struct ValueCollection;
+		int FindEntry(TKey key)
+		{
+			for (int i = 0; i < count; i++)
+			{
+				if ((*entries)[i].key == key) return i;
+			}
+			return -1;
+		}
 
-        struct Entry1
-        {
-            int hashCode;
-            int next;
-            TKey key;
-            void* valu;
-        };
+		bool ContainsKey(TKey key)
+		{
+			return FindEntry(key) >= 0;
+		}
 
-        void* kass;
-        void* monitor;
-        Array<int>* buckets;
-        Array<Entry1>* entries;
-        int count;
-        int version;
-        int freeList;
-        int freeCount;
-        void* comparer;
-        KeysCollection* keys;
-        ValueCollection* values;
-        void* _syncRoot;
+		bool ContainsValue(TValue value)
+		{
+			for (int i = 0; i < count; i++)
+			{
+				if ((*entries)[i].hashCode >= 0 &&
+					(*entries)[i].valu == value) return true;
+			}
+			return false;
+		}
 
-        void* get_Comparer()
-        {
-            return comparer;
-        }
+		bool TryGetValue(TKey key, TValue* value)
+		{
+			int i = FindEntry(key);
+			if (i >= 0) {
+				*value = (*entries)[i].valu;
+				return true;
+			}
+			*value = TValue();
+			return false;
+		}
 
-        int get_Count()
-        {
-            return count;
-        }
+		TValue GetValueOrDefault(TKey key)
+		{
+			int i = FindEntry(key);
+			if (i >= 0) {
+				return (*entries)[i].valu;
+			}
+			return TValue();
+		}
 
-        KeysCollection get_Keys()
-        {
-            if (!keys) keys = new KeysCollection(this);
-            return (*keys);
-        }
+		struct KeysCollection
+		{
+			Dictionary* dictionary;
 
-        ValueCollection get_Values()
-        {
-            if (!values) values = new ValueCollection(this);
-            return (*values);
-        }
+			KeysCollection(Dictionary* dictionary)
+			{
+				this->dictionary = dictionary;
+			}
 
-        TValue operator [] (TKey key)
-        {
-            int i = FindEntry(key);
-            if (i >= 0) return void* ((*entries)[i].valu);
-            return TValue();
-        }
+			TKey operator [] (int i)
+			{
+				auto entries = dictionary->entries;
+				if (!entries) return TKey();
+				return (*entries)[i].key;
+			}
 
-        const TValue operator [] (TKey key) const
-        {
-            int i = FindEntry(key);
-            if (i >= 0) return (*entries)[i].valu;
-            return TValue();
-        }
+			const TKey operator [] (int i) const
+			{
+				auto entries = dictionary->entries;
+				if (!entries) return TKey();
+				return (*entries)[i].key;
+			}
 
-        int FindEntry(TKey key)
-        {
-            for (int i = 0; i < count; i++)
-            {
-                if ((*entries)[i].key == key) return i;
-            }
-            return -1;
-        }
+			int get_Count()
+			{
+				return dictionary->get_Count();
+			}
+		};
 
-        bool ContainsKey(TKey key)
-        {
-            return FindEntry(key) >= 0;
-        }
+		struct ValueCollection
+		{
+			Dictionary* dictionary;
 
-        bool ContainsValue(TValue value)
-        {
-            for (int i = 0; i < count; i++)
-            {
-                if ((*entries)[i].hashCode >= 0 &&
-                    (*entries)[i].valu == value) return true;
-            }
-            return false;
-        }
+			ValueCollection(Dictionary* dictionary)
+			{
+				this->dictionary = dictionary;
+			}
 
-        bool TryGetValue(TKey key, TValue* value)
-        {
-            int i = FindEntry(key);
-            if (i >= 0) {
-                *value = (*entries)[i].valu;
-                return true;
-            }
-            *value = TValue();
-            return false;
-        }
+			TValue operator [] (int i)
+			{
+				auto entries = dictionary->entries;
+				if (!entries) return TValue();
+				return (*entries)[i].valu;
+			}
 
-        TValue GetValueOrDefault(TKey key)
-        {
-            int i = FindEntry(key);
-            if (i >= 0) {
-                return (*entries)[i].valu;
-            }
-            return TValue();
-        }
+			const TValue operator [] (int i) const
+			{
+				auto entries = dictionary->entries;
+				if (!entries) return TValue();
+				return (*entries)[i].valu;
+			}
 
-        struct KeysCollection
-        {
-            Dictionary* dictionary;
+			int get_Count()
+			{
+				return dictionary->get_Count();
+			}
+		};
+	};
 
-            KeysCollection(Dictionary* dictionary)
-            {
-                this->dictionary = dictionary;
-            }
+	struct String : Il2CppObject {
+		int32_t m_StringLength;
+		char* m_FirstChar;
 
-            TKey operator [] (int i)
-            {
-                auto entries = dictionary->entries;
-                if (!entries) return TKey();
-                return (*entries)[i].key;
-            }
+		static String* FromCString(std::string text);
+		const char* ToCString();
+	};
 
-            const TKey operator [] (int i) const
-            {
-                auto entries = dictionary->entries;
-                if (!entries) return TKey();
-                return (*entries)[i].key;
-            }
+	struct Vector3 {
+		float x = 0, y = 0, z = 0;
+		float distance(Vector3 b) {
+			return sqrt(
+				pow(x - b.x, 2) + pow(y - b.y, 2) + pow(z - b.z, 2)
+			);
+		}
+		bool zero() { return (x == 0 && y == 0 && z == 0); }
+		Vector3 operator *(float k) { return { x * k, y * k, z * k }; }
+		Vector3 operator -(Vector3 B) { return { x - B.x, y - B.y, z - B.z }; }
+		Vector3 operator +(Vector3 B) { return { x + B.x, y + B.y, z + B.z }; }
+		Vector3(float x, float y, float z) : x(x), y(y), z(z) {}
+		Vector3() {}
 
-            int get_Count()
-            {
-                return dictionary->get_Count();
-            }
-        };
+		static Vector3 Null() {
+			return { 0, 0, 0 };
+		}
+	};
 
-        struct ValueCollection
-        {
-            Dictionary* dictionary;
+	class Transform {
+	public:
+		Vector3 getPosition();
+		void setPosition(Vector3 pos);
+	};
 
-            ValueCollection(Dictionary* dictionary)
-            {
-                this->dictionary = dictionary;
-            }
+	struct Component {};
 
-            TValue operator [] (int i)
-            {
-                auto entries = dictionary->entries;
-                if (!entries) return TValue();
-                return (*entries)[i].valu;
-            }
+	struct Object {};
 
-            const TValue operator [] (int i) const
-            {
-                auto entries = dictionary->entries;
-                if (!entries) return TValue();
-                return (*entries)[i].valu;
-            }
+	struct GameObject {
+		std::string Name();
+		void* GetComponent(const char* name);
 
-            int get_Count()
-            {
-                return dictionary->get_Count();
-            }
-        };
-    };
+		Transform* GetTransform();
+	};
 
-    struct String {
-        static String* FromCString(std::string text);
-        std::string ToCString();
-    };
+	struct Vector2 {
+		float x, y;
+	};
 
-    // sqrt(
-    // (x1-x2)^2 + (y1-y2)^2 + (z1-z2)^2
-    // )
-    struct Vector3 {
-        float x = 0, y = 0, z = 0;
-        float distance(Vector3 b) {
-            return sqrt(
-                pow(x - b.x, 2) + pow(y - b.y, 2) + pow(z - b.z, 2)
-            );
-        }
-        bool zero() { return (x == 0 && y == 0 && z == 0); }
-        Vector3 operator *(float k) { return { x * k, y * k, z * k }; }
-        Vector3 operator -(Vector3 B) { return { x - B.x, y - B.y, z - B.z }; }
-        Vector3 operator +(Vector3 B) { return { x + B.x, y + B.y, z + B.z }; }
-        Vector3(float x, float y, float z) : x(x), y(y), z(z) {}
-        Vector3() {}
+	enum CursorLockMode {
+		None = 0,
+		Lock = 1,
+		Confined = 2
+	};
 
-        static Vector3 Null() {
-            return { 0, 0, 0 };
-        }
-    };
+	struct Cursor {
+		static void set_visible(bool value);
+		static bool get_visible();
+		static void set_lockState(CursorLockMode target);
+	};
 
-    class Transform {
-    public:
-        Vector3 getPosition();
-        void setPosition(Vector3 pos);
-    };
+	struct Bounds {
+		Vector3 center;
+		Vector3 extent;
+	};
 
-    struct Component {};
+	struct Text {
+		void set_text(String* text);
+	};
 
-    struct Object {};
+	struct Camera {
+		void set_fieldOfView(float value);
+	};
 
-    struct GameObject {
-        std::string Name();
-        void* GetComponent(const char* name);
-
-        Transform* GetTransform();
-    };
-
-    struct Vector2 {
-        float x, y;
-    };
-
-    enum CursorLockMode {
-        None = 0,
-        Lock = 1,
-        Confined = 2
-    };
-
-    struct Cursor {
-        static void set_visible(bool value);
-        static bool get_visible();
-        static void set_lockState(CursorLockMode target);
-    };
-
-    struct Bounds {
-        Vector3 center;
-        Vector3 extent;
-    };
-
-    struct Text {
-        void set_text(String* text);
-    };
-
-    struct Camera {
-        void set_fieldOfView(float value);
-    };
-
-    struct Time {
-        static void set_timeScale(float value);
-    };
+	struct Time {
+		static void set_timeScale(float value);
+	};
 }
 
 namespace MoleMole {
-    enum EntityType : int32_t {
-        None = 0,
-        Avatar = 1,
-        Monster = 2,
-        Bullet = 3,
-        AttackPhyisicalUnit = 4,
-        AOE = 5,
-        Camera = 6,
-        EnviroArea = 7,
-        Equip = 8,
-        MonsterEquip = 9,
-        Grass = 10,
-        Level = 11,
-        NPC = 12,
-        TransPointFirst = 13,
-        TransPointFirstGadget = 14,
-        TransPointSecond = 15,
-        TransPointSecondGadget = 16,
-        DropItem = 17,
-        Field = 18,
-        Gadget = 19,
-        Water = 20,
-        GatherPoint = 21,
-        GatherObject = 22,
-        AirflowField = 23,
-        SpeedupField = 24,
-        Gear = 25,
-        Chest = 26,
-        EnergyBall = 27,
-        ElemCrystal = 28,
-        Timeline = 29,
-        Worktop = 30,
-        Team = 31,
-        Platform = 32,
-        AmberWind = 33,
-        EnvAnimal = 34,
-        SealGadget = 35,
-        Tree = 36,
-        Bush = 37,
-        QuestGadget = 38,
-        Lightning = 39,
-        RewardPoint = 40,
-        RewardStatue = 41,
-        MPLevel = 42,
-        WindSeed = 43,
-        MpPlayRewardPoint = 44,
-        ViewPoint = 45,
-        RemoteAvatar = 46,
-        GeneralRewardPoint = 47,
-        PlayTeam = 48,
-        OfferingGadget = 49,
-        EyePoint = 50,
-        MiracleRing = 51,
-        Foundation = 52,
-        WidgetGadget = 53,
-        Vehicle = 54,
-        DangerZone = 55,
-        EchoShell = 56,
-        HomeGatherObject = 57,
-        Projector = 58,
-        Screen = 59,
-        CustomTile = 60,
-        FishPool = 61,
-        FishRod = 62,
-        CustomGadget = 63,
-        RoguelikeOperatorGadget = 64,
-        ActivityInteractGadget = 65,
-        BlackMud = 66,
-        SubEquip = 67,
-        UIInteractGadget = 68,
-        NightCrowGadget = 69,
-        Partner = 70,
-        DeshretObeliskGadget = 71,
-        CoinCollectLevelGadget = 72,
-        UgcSpecialGadget = 73,
-        UgcTowerLevelUpGadget = 74,
-        JourneyGearOperatorGadget = 75,
-        CurveMoveGadget = 76
-    };
+	enum EntityType : int32_t {
+		None = 0,
+		Avatar = 1,
+		Monster = 2,
+		Bullet = 3,
+		AttackPhyisicalUnit = 4,
+		AOE = 5,
+		Camera = 6,
+		EnviroArea = 7,
+		Equip = 8,
+		MonsterEquip = 9,
+		Grass = 10,
+		Level = 11,
+		NPC = 12,
+		TransPointFirst = 13,
+		TransPointFirstGadget = 14,
+		TransPointSecond = 15,
+		TransPointSecondGadget = 16,
+		DropItem = 17,
+		Field = 18,
+		Gadget = 19,
+		Water = 20,
+		GatherPoint = 21,
+		GatherObject = 22,
+		AirflowField = 23,
+		SpeedupField = 24,
+		Gear = 25,
+		Chest = 26,
+		EnergyBall = 27,
+		ElemCrystal = 28,
+		Timeline = 29,
+		Worktop = 30,
+		Team = 31,
+		Platform = 32,
+		AmberWind = 33,
+		EnvAnimal = 34,
+		SealGadget = 35,
+		Tree = 36,
+		Bush = 37,
+		QuestGadget = 38,
+		Lightning = 39,
+		RewardPoint = 40,
+		RewardStatue = 41,
+		MPLevel = 42,
+		WindSeed = 43,
+		MpPlayRewardPoint = 44,
+		ViewPoint = 45,
+		RemoteAvatar = 46,
+		GeneralRewardPoint = 47,
+		PlayTeam = 48,
+		OfferingGadget = 49,
+		EyePoint = 50,
+		MiracleRing = 51,
+		Foundation = 52,
+		WidgetGadget = 53,
+		Vehicle = 54,
+		DangerZone = 55,
+		EchoShell = 56,
+		HomeGatherObject = 57,
+		Projector = 58,
+		Screen = 59,
+		CustomTile = 60,
+		FishPool = 61,
+		FishRod = 62,
+		CustomGadget = 63,
+		RoguelikeOperatorGadget = 64,
+		ActivityInteractGadget = 65,
+		BlackMud = 66,
+		SubEquip = 67,
+		UIInteractGadget = 68,
+		NightCrowGadget = 69,
+		Partner = 70,
+		DeshretObeliskGadget = 71,
+		CoinCollectLevelGadget = 72,
+		UgcSpecialGadget = 73,
+		UgcTowerLevelUpGadget = 74,
+		JourneyGearOperatorGadget = 75,
+		CurveMoveGadget = 76
+	};
 
-    class BaseEntity {
-    public:
-        Unity::Vector3 getPosition();
-        void setPosition(Unity::Vector3 pos);
+	class BaseEntity {
+	public:
+		Unity::Vector3 getPosition();
+		void setPosition(Unity::Vector3 pos);
 
-        Unity::GameObject* get_GameObject();
+		Unity::GameObject* get_GameObject();
 
-        uint32_t runtimeId();
-        EntityType type();
+		uint32_t runtimeId();
+		EntityType type();
 
-        std::string name();
+		Unity::String* name();
 
-        void* animator();
-    };
+		void* animator();
+	};
 
-    class EntityManager {
-    public:
-        static EntityManager* get_EntityManager();
-        std::vector<BaseEntity*> entities();
-        BaseEntity* avatar();
-    };
+	class EntityManager {
+	public:
+		static EntityManager* get_EntityManager();
+		std::vector<BaseEntity*> entities();
+		BaseEntity* avatar();
+	};
 
-    class LoadingManager {
-    public:
-        static LoadingManager* get_LoadingManager();
+	class LoadingManager {
+	public:
+		static LoadingManager* get_LoadingManager();
 
-        bool IsLoaded();
-    };
+		bool IsLoaded();
+	};
 
-    struct SceneAvatarInfo {};
+	struct SceneAvatarInfo {};
 
-    struct SceneEntityInfo {};
+	struct SceneEntityInfo {};
 
-    struct ProtoVector {
-        char _[0x20];
-        float x;
-        float y;
-        float z;
-    };
+	struct ProtoVector {
+		char _[0x20];
+		float x;
+		float y;
+		float z;
+	};
 
-    struct Rect
-    {
-        float m_XMin;
-        float m_YMin;
-        float m_Width;
-        float m_Height;
-    };
+	struct Rect
+	{
+		float m_XMin;
+		float m_YMin;
+		float m_Width;
+		float m_Height;
+	};
 
-    struct MotionInfo {
-        char _[0x20];
-        ProtoVector* pos1;
-        ProtoVector* pos2;
-        ProtoVector* pos3;
-        ProtoVector* pos4;
-        char __[0x8];
-        uint32_t a5;
-        uint32_t a6;
-        uint32_t a7;
-        int32_t state;
-        uint32_t ulong;
-        uint32_t a9;
-    };
+	struct MotionInfo {
+		char _[0x20];
+		ProtoVector* pos1;
+		ProtoVector* pos2;
+		ProtoVector* pos3;
+		ProtoVector* pos4;
+		char __[0x8];
+		uint32_t a5;
+		uint32_t a6;
+		uint32_t a7;
+		int32_t state;
+		uint32_t ulong;
+		uint32_t a9;
+	};
 }

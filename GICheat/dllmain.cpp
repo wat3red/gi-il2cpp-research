@@ -20,16 +20,17 @@
 #include "lib/minhook/include/MinHook.h"
 #include "il2cpp_types.h"
 #include "sdk_types.h"
+#include "logger.h"
 
 #pragma comment(lib, "dbghelp.lib")
 #pragma comment(lib, "ws2_32.lib")
 
 // Globals
 uintptr_t g_base = 0;
-FILE* g_dumpFile = nullptr;
+FILE* g_LogFile = nullptr;
 bool g_blockPackets = true;
 
-std::unordered_map<const Il2CppType*, std::string> g_cachedTypes;
+std::unordered_map<Il2CppType*, std::string> g_cachedTypes;
 std::unordered_map<Il2CppClass*, std::string> g_cachedClassNames;
 
 // Function pointers
@@ -57,26 +58,13 @@ const char* (*il2cpp_field_get_name)(FieldInfo* field) = nullptr;
 int (*il2cpp_field_get_flags)(FieldInfo* field) = nullptr;
 Il2CppType* (*il2cpp_field_get_type)(FieldInfo* field) = nullptr;
 int32_t(*il2cpp_field_get_offset)(FieldInfo* field) = nullptr;
-std::string(*il2cpp_type_get_name)(Il2CppType* type) = nullptr;
+
+void(*il2cpp_type_get_name_tmp)(void* out_str_struct, Il2CppType* type, int format) = nullptr;
+void(*il2cpp_free_temp_str)(void* out_str_struct) = nullptr;
 
 Il2CppClass* (*MetadataCache__GetTypeInfoFromTypeDefinitionIndex)(int32_t typeDefinitionIndex) = nullptr;
 
 //void (*o_ClassInit)(__int64, __int64) = nullptr;
-
-// Logging helper: thread-safe, flushes libc buffers and OS buffers to disk
-void Log(const char* fmt, ...)
-{
-	static size_t counter = 0;
-	if (!g_dumpFile) return;
-
-	va_list ap;
-	va_start(ap, fmt);
-	vfprintf(g_dumpFile, fmt, ap);
-	va_end(ap);
-
-	if (++counter % 200 == 0)   // flush only every 200 lines
-		fflush(g_dumpFile);
-}
 
 int WINAPI h_send(SOCKET s, const char* buf, int len, int flags)
 {
@@ -110,20 +98,99 @@ int WINAPI h_connect(SOCKET s, const sockaddr* name, int namelen)
 	return o_connect(s, name, namelen);
 }
 
+std::string StripNamespaces(const std::string& full)
+{
+	std::string out;
+	out.reserve(full.size());
+
+	for (size_t i = 0; i < full.size(); ++i)
+	{
+		char c = full[i];
+
+		// Если встретили имя внутри generics (< ... >)
+		if (std::isalnum((unsigned char)c) || c == '_')
+		{
+			size_t start = i;
+
+			// читаем токен (до < > , . whitespace)
+			while (i < full.size() &&
+				(std::isalnum((unsigned char)full[i]) || full[i] == '_' || full[i] == '.'))
+			{
+				i++;
+			}
+
+			std::string token = full.substr(start, i - start);
+
+			// если есть namespace -> отрезаем всё до последней точки
+			size_t dot = token.rfind('.');
+			if (dot != std::string::npos)
+				token = token.substr(dot + 1);
+
+			out += token;
+
+			i--; // компенсируем повышение i
+			continue;
+		}
+
+		// управляющие символы (например < > , [] )
+		out.push_back(c);
+	}
+
+	return out;
+}
+
+
+std::string GetTypeName(Il2CppType* type, int format = 0)
+{
+	if (g_cachedTypes.find(type) != g_cachedTypes.end())
+		return g_cachedTypes[type];
+
+	if (!type) return "unknown";
+
+	// v10 is an array of 4 qwords in pseudocode -> we'll use a small struct
+	uint64_t out[4] = { 0 };
+
+	// Call the inlined formatter: out <- formatted string representation of 'type'
+	il2cpp_type_get_name_tmp(out, type, format);
+
+	const char* cstr = nullptr;
+	// pseudocode checks v10[3] >= 0x10 then uses v10[0] else uses inline buffer inside 'out'
+	// treat out[3] as length/capacity indicator like std::string-small-buffer heuristic
+	if (out[3] >= 0x10)
+		cstr = (const char*)out[0];
+	else
+	{
+		// if it's small-string, the chars are stored in the out buffer itself;
+		// pointer to inline buffer = reinterpret_cast<char*>(&out[0])
+		cstr = reinterpret_cast<const char*>(&out[0]);
+	}
+
+	std::string result = cstr ? std::string(cstr) : std::string("unknown");
+
+	// free temp if allocator used (pseudocode calls sub_8D3AD0(v10))
+	il2cpp_free_temp_str(out);
+
+	g_cachedTypes[type] = result;
+
+	return result;
+}
+
 void DumpClassInfo(Il2CppClass* classPtr) {
 	std::string className = il2cpp_class_get_name(classPtr);
 	std::string namespaceName = il2cpp_class_get_namespace(classPtr);
 
-	Log("// Namespace: %s\nclass %s \n{\n\t// Fields \n\n", namespaceName.c_str(), className.c_str());
-
-	//printf("parent klass = 0x%X\n", *(uint32_t*)(classPtr + 0xAC));
-
-	/*std::stringstream outPut;
+	std::stringstream outPut;
 	uint32_t parentToken = *(uint32_t*)((uintptr_t)classPtr + 0xAC);
 	if (parentToken != 0) {
-		uintptr_t parentClass = g_base + 0x4BAF8B0 + parentToken;
-		printf("parent klass = 0x%llX (token: 0x%X)\n", parentClass, parentToken);
-	}*/
+		Il2CppClass* parentClass = (Il2CppClass*)(**(uintptr_t**)(g_base + 0x4BAF8B0) + parentToken); // metadata_base_pointer
+		if (parentClass) {
+			std::string parentClassName = il2cpp_class_get_name(parentClass);
+			Log("// Namespace: %s\nclass %s : %s\n{\n\t// Fields \n\n", namespaceName.c_str(), className.c_str(), parentClassName.c_str());
+		}
+	}
+	else {
+		Log("// Namespace: %s\nclass %s \n{\n\t// Fields \n\n", namespaceName.c_str(), className.c_str());
+	}
 
 	void* fieldIter = nullptr;
 	while (FieldInfo* field = il2cpp_class_get_fields(classPtr, &fieldIter)) {
@@ -157,21 +224,8 @@ void DumpClassInfo(Il2CppClass* classPtr) {
 		const char* fieldName = il2cpp_field_get_name(field);
 		int32_t offset = il2cpp_field_get_offset(field);
 
-		std::string typeName = "unk";
 		Il2CppType* type = il2cpp_field_get_type(field);
-		if (type) {
-			auto it = g_cachedTypes.find(type);
-			if (it != g_cachedTypes.end()) {
-				typeName = it->second;
-			}
-			else {
-				Il2CppClass* tClass = il2cpp_class_from_type(type);
-				if (tClass) {
-					typeName = il2cpp_class_get_name(tClass);
-					g_cachedTypes[type] = typeName;
-				}
-			}
-		}
+		std::string typeName = StripNamespaces(GetTypeName(type));
 
 		Log("\t%s %s %s; // 0x%X, FLAGS: 0x%X\n",
 			modifiers.c_str(),
@@ -247,44 +301,20 @@ void DumpClassInfo(Il2CppClass* classPtr) {
 				uintptr_t param = paramArray + ((i - 1) * 0x18);
 				if (!param) continue;
 
-				const Il2CppType* paramType = *(Il2CppType**)(paramArray + (i * 0x18));
+				Il2CppType* paramType = *(Il2CppType**)(paramArray + (i * 0x18));
 				if (!paramType) continue;
 
 				const char* paramName = *(const char**)((uintptr_t)param + 0x10);
 				if (!paramName) continue;
 
-				std::string typeName;
-				auto it = g_cachedTypes.find(paramType);
-				if (it != g_cachedTypes.end()) {
-					typeName = it->second;
-				}
-				else {
-					Il2CppClass* tClass = il2cpp_class_from_type(paramType);
-					if (tClass) {
-						typeName = il2cpp_class_get_name(tClass);
-						g_cachedTypes[paramType] = typeName;
-					}
-				}
+				std::string typeName = StripNamespaces(GetTypeName(paramType));
 
 				paramList += typeName + std::string(" ") + (std::string)paramName + (i == paramCount - 1 ? "" : ", ");
 			}
 		}
 
-		std::string returnTypeName = "unk";
 		Il2CppType* returnType = il2cpp_method_get_return_type(method);
-		if (returnType) {
-			auto it = g_cachedTypes.find(returnType);
-			if (it != g_cachedTypes.end()) {
-				returnTypeName = it->second;
-			}
-			else {
-				Il2CppClass* tClass = il2cpp_class_from_type(returnType);
-				if (tClass) {
-					returnTypeName = il2cpp_class_get_name(tClass);
-					g_cachedTypes[returnType] = returnTypeName;
-				}
-			}
-		}
+		std::string returnTypeName = StripNamespaces(GetTypeName(returnType));
 
 		Log("\t%s%s %s(%s); // Slot: %d, RVA: 0x%X, FLAGS: 0x%X\n",
 			modifiers.c_str(),
@@ -292,14 +322,13 @@ void DumpClassInfo(Il2CppClass* classPtr) {
 			il2cpp_method_get_name(method),
 			paramList.c_str(),
 			slot,
-			//(uintptr_t)method->methodPointer - g_base, flags);
-			(*(uintptr_t*)((uintptr_t)method + 0x30)) - g_base, flags);
+			(*(uintptr_t*)((uintptr_t)method)) - g_base, flags);
 
 	}
 
 	Log("}\n\n");
 }
-//
+
 //void __fastcall h_ClassInit(__int64 a1, __int64 a2)
 //{
 //	o_ClassInit(a1, a2);
@@ -310,7 +339,22 @@ void DumpClassInfo(Il2CppClass* classPtr) {
 
 void (*o_set_fieldOfView)(Unity::Camera* _this, float value);
 void h_set_fieldOfView(Unity::Camera* _this, float value) {
-	o_set_fieldOfView(_this, 120.f);
+	o_set_fieldOfView(_this, 70.f);
+
+	MoleMole::EntityManager* entityManager = MoleMole::EntityManager::get_EntityManager();
+
+	Log("MoleMole::EntityManager::get_EntityManager() = %p\n", entityManager);
+
+	if (!entityManager) return;
+
+	std::vector<MoleMole::BaseEntity*> entties = entityManager->entities();
+
+	for (MoleMole::BaseEntity* entity : entties) {
+		if (!entity) continue;
+		Unity::String* name = entity->name();
+
+		Log("entity: %p, l: %d, name: %s\n", entity, name->m_StringLength, name->ToCString());
+	}
 }
 
 void DisableLogReport()
@@ -357,18 +401,10 @@ DWORD WINAPI StartThread(LPVOID)
 	DisableLogReport();
 
 	g_base = (uintptr_t)GetModuleHandle(NULL);
-	printf("Game Base: 0x%p\n", (void*)g_base);
-
-	fopen_s(&g_dumpFile, "il2cpp_complete_dump.txt", "w");
-	if (!g_dumpFile) {
-		printf("Failed to open dump file!\n");
-	}
-	else {
-		setvbuf(g_dumpFile, nullptr, _IOFBF, 4 * 1024 * 1024);
-	}
+	Log("Game Base: 0x%p\n", (void*)g_base);
 
 	if (MH_Initialize() != MH_OK) {
-		printf("MinHook init failed!\n");
+		Log("MinHook init failed!\n");
 		return 1;
 	}
 
@@ -389,7 +425,8 @@ DWORD WINAPI StartThread(LPVOID)
 	il2cpp_method_get_params = (decltype(il2cpp_method_get_params))(g_base + 0x451910);
 	il2cpp_method_get_return_type = (decltype(il2cpp_method_get_return_type))(g_base + 0x451660);
 
-	il2cpp_type_get_name = (decltype(il2cpp_type_get_name))(g_base + 0x450930);
+	il2cpp_type_get_name_tmp = (decltype(il2cpp_type_get_name_tmp))(g_base + 0x450930);
+	il2cpp_free_temp_str = (decltype(il2cpp_free_temp_str))(g_base + 0x8D3AD0);
 
 	MetadataCache__GetTypeInfoFromTypeDefinitionIndex = (decltype(MetadataCache__GetTypeInfoFromTypeDefinitionIndex))(g_base + 0x446450);
 
@@ -397,6 +434,7 @@ DWORD WINAPI StartThread(LPVOID)
 	//MH_CreateHook((LPVOID)(g_base + 0x43C7A0), h_ClassInit, (void**)&o_ClassInit);
 
 	MH_CreateHook((LPVOID)(g_base + 0x15126C0), h_set_fieldOfView, (void**)&o_set_fieldOfView);
+
 	// === Packet Blocker Hooks ===
 	MH_CreateHookApi(L"ws2_32", "send", h_send, (LPVOID*)&o_send);
 	MH_CreateHookApi(L"ws2_32", "WSASend", h_WSASend, (LPVOID*)&o_WSASend);
@@ -404,15 +442,14 @@ DWORD WINAPI StartThread(LPVOID)
 
 	MH_EnableHook(MH_ALL_HOOKS);
 
-	printf("Waiting for 30s\n");
+	//printf("Waiting for 20s\n");
 
 	std::thread blockPacketsThread(([]() { Sleep(10000); g_blockPackets = false; }));
 	blockPacketsThread.detach();
 
-	Sleep(30000);
+	/*Sleep(10000);
 	printf("Starting dump\n");
-
-	Il2CppDump();
+	Il2CppDump();*/
 
 	return 0;
 }
@@ -426,20 +463,20 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 	}
 	else if (ul_reason_for_call == DLL_PROCESS_DETACH) {
 		// flush + close dump file
-		if (g_dumpFile) {
-			fflush(g_dumpFile);
-			int fd = _fileno(g_dumpFile);
+		if (g_LogFile) {
+			fflush(g_LogFile);
+			int fd = _fileno(g_LogFile);
 			if (fd != -1) {
 				intptr_t osHandle = _get_osfhandle(fd);
 				if (osHandle != -1 && osHandle != (intptr_t)INVALID_HANDLE_VALUE) {
 					FlushFileBuffers((HANDLE)osHandle);
 				}
 			}
-			fclose(g_dumpFile);
-			g_dumpFile = nullptr;
+			fclose(g_LogFile);
+			g_LogFile = nullptr;
 		}
 
 		MH_Uninitialize();
 	}
 	return TRUE;
-}//////////////////////////
+}
