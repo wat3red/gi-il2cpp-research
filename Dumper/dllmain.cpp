@@ -1,4 +1,4 @@
-п»ї// dllmain.cpp
+// dllmain.cpp
 #include <winsock2.h>
 #include <windows.h>
 #include <cstdio>
@@ -19,7 +19,6 @@
 
 #include "lib/minhook/include/MinHook.h"
 #include "il2cpp_types.h"
-#include "sdk_types.h"
 #include "logger.h"
 
 #pragma comment(lib, "dbghelp.lib")
@@ -31,7 +30,6 @@ FILE* g_LogFile = nullptr;
 bool g_blockPackets = true;
 
 std::unordered_map<Il2CppType*, std::string> g_cachedTypes;
-std::unordered_map<Il2CppClass*, std::string> g_cachedClassNames;
 
 // Function pointers
 typedef int (WINAPI* send_t)(SOCKET, const char*, int, int);
@@ -64,12 +62,10 @@ void(*il2cpp_free_temp_str)(void* out_str_struct) = nullptr;
 
 Il2CppClass* (*MetadataCache__GetTypeInfoFromTypeDefinitionIndex)(int32_t typeDefinitionIndex) = nullptr;
 
-//void (*o_ClassInit)(__int64, __int64) = nullptr;
-
 int WINAPI h_send(SOCKET s, const char* buf, int len, int flags)
 {
 	if (g_blockPackets)
-		return len; // РїСЂРёС‚РІРѕСЂСЏРµРјСЃСЏ, С‡С‚Рѕ РѕС‚РїСЂР°РІРёР»Рё
+		return len; // притворяемся, что отправили
 
 	return o_send(s, buf, len, flags);
 }
@@ -107,12 +103,12 @@ std::string StripNamespaces(const std::string& full)
 	{
 		char c = full[i];
 
-		// Р•СЃР»Рё РІСЃС‚СЂРµС‚РёР»Рё РёРјСЏ РІРЅСѓС‚СЂРё generics (< ... >)
+		// Если встретили имя внутри generics (< ... >)
 		if (std::isalnum((unsigned char)c) || c == '_')
 		{
 			size_t start = i;
 
-			// С‡РёС‚Р°РµРј С‚РѕРєРµРЅ (РґРѕ < > , . whitespace)
+			// читаем токен (до < > , . whitespace)
 			while (i < full.size() &&
 				(std::isalnum((unsigned char)full[i]) || full[i] == '_' || full[i] == '.'))
 			{
@@ -121,18 +117,18 @@ std::string StripNamespaces(const std::string& full)
 
 			std::string token = full.substr(start, i - start);
 
-			// РµСЃР»Рё РµСЃС‚СЊ namespace -> РѕС‚СЂРµР·Р°РµРј РІСЃС‘ РґРѕ РїРѕСЃР»РµРґРЅРµР№ С‚РѕС‡РєРё
+			// если есть namespace -> отрезаем всё до последней точки
 			size_t dot = token.rfind('.');
 			if (dot != std::string::npos)
 				token = token.substr(dot + 1);
 
 			out += token;
 
-			i--; // РєРѕРјРїРµРЅСЃРёСЂСѓРµРј РїРѕРІС‹С€РµРЅРёРµ i
+			i--; // компенсируем повышение i
 			continue;
 		}
 
-		// СѓРїСЂР°РІР»СЏСЋС‰РёРµ СЃРёРјРІРѕР»С‹ (РЅР°РїСЂРёРјРµСЂ < > , [] )
+		// управляющие символы (например < > , [] )
 		out.push_back(c);
 	}
 
@@ -329,34 +325,6 @@ void DumpClassInfo(Il2CppClass* classPtr) {
 	Log("}\n\n");
 }
 
-//void __fastcall h_ClassInit(__int64 a1, __int64 a2)
-//{
-//	o_ClassInit(a1, a2);
-//
-//	// Dump class info after initialization
-//	DumpClassInfo((Il2CppClass*)a1);
-//}
-
-void (*o_set_fieldOfView)(Unity::Camera* _this, float value);
-void h_set_fieldOfView(Unity::Camera* _this, float value) {
-	o_set_fieldOfView(_this, 70.f);
-
-	MoleMole::EntityManager* entityManager = MoleMole::EntityManager::get_EntityManager();
-
-	Log("MoleMole::EntityManager::get_EntityManager() = %p\n", entityManager);
-
-	if (!entityManager) return;
-
-	std::vector<MoleMole::BaseEntity*> entties = entityManager->entities();
-
-	for (MoleMole::BaseEntity* entity : entties) {
-		if (!entity) continue;
-		Unity::String* name = entity->name();
-
-		Log("entity: %p, l: %d, name: %s\n", entity, name->m_StringLength, name->ToCString());
-	}
-}
-
 void DisableLogReport()
 {
 	wchar_t filename[MAX_PATH] = {};
@@ -430,11 +398,6 @@ DWORD WINAPI StartThread(LPVOID)
 
 	MetadataCache__GetTypeInfoFromTypeDefinitionIndex = (decltype(MetadataCache__GetTypeInfoFromTypeDefinitionIndex))(g_base + 0x446450);
 
-	// Hook class initialization
-	//MH_CreateHook((LPVOID)(g_base + 0x43C7A0), h_ClassInit, (void**)&o_ClassInit);
-
-	MH_CreateHook((LPVOID)(g_base + 0x15126C0), h_set_fieldOfView, (void**)&o_set_fieldOfView);
-
 	// === Packet Blocker Hooks ===
 	MH_CreateHookApi(L"ws2_32", "send", h_send, (LPVOID*)&o_send);
 	MH_CreateHookApi(L"ws2_32", "WSASend", h_WSASend, (LPVOID*)&o_WSASend);
@@ -442,14 +405,12 @@ DWORD WINAPI StartThread(LPVOID)
 
 	MH_EnableHook(MH_ALL_HOOKS);
 
-	//printf("Waiting for 20s\n");
-
 	std::thread blockPacketsThread(([]() { Sleep(10000); g_blockPackets = false; }));
 	blockPacketsThread.detach();
 
-	/*Sleep(10000);
+	Sleep(10000);
 	printf("Starting dump\n");
-	Il2CppDump();*/
+	Il2CppDump();
 
 	return 0;
 }

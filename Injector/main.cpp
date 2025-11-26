@@ -95,42 +95,6 @@ public:
     }
 };
 
-class NetworkManager {
-public:
-    static bool SetInterfaceState(const std::wstring& adapterName, bool enable) {
-        // netsh interface set interface "Wi-Fi" admin=enabled
-        std::wstring command = L"netsh interface set interface \"" + adapterName +
-            L"\" admin=" + (enable ? L"enabled" : L"disabled");
-
-        return ExecuteCommand(command);
-    }
-
-private:
-    static bool ExecuteCommand(const std::wstring& command) {
-        STARTUPINFO si = { sizeof(si) };
-        PROCESS_INFORMATION pi;
-
-        // Create a command line
-        std::wstring cmdLine = L"cmd.exe /c " + command;
-
-        if (CreateProcess(NULL, &cmdLine[0], NULL, NULL, FALSE,
-            CREATE_NO_WINDOW, NULL, NULL, &si, &pi)) {
-
-            WaitForSingleObject(pi.hProcess, INFINITE);
-
-            DWORD exitCode;
-            GetExitCodeProcess(pi.hProcess, &exitCode);
-
-            CloseHandle(pi.hProcess);
-            CloseHandle(pi.hThread);
-
-            return (exitCode == 0);
-        }
-
-        return false;
-    }
-};
-
 class ProcessManager {
 public:
     static bool StartProcessAndInjectDLL(const std::wstring& processPath, const std::wstring& dllPath) {
@@ -233,33 +197,12 @@ public:
     }
 
     bool Launch() {
-        // Step 1: Disable internet
-        /*std::wcout << L"[*] Disabling internet..." << std::endl;
-        if (!NetworkManager::SetInterfaceState(m_adapterName, false)) {
-            std::wcout << L"Failed to disable network adapter." << std::endl;
-            return false;
-        }
-*/
         // Step 2: Launch game with DLL injection
         std::wcout << L"[*] Launching Genshin Impact..." << std::endl;
         if (!ProcessManager::StartProcessAndInjectDLL(m_gamePath, m_dllPath)) {
-            std::wcout << L"Failed to launch game. Re-enabling internet..." << std::endl;
-            NetworkManager::SetInterfaceState(m_adapterName, true);
+            std::wcout << L"Failed to launch game." << std::endl;
             return false;
         }
-
-        //// Step 3: Random delay between 4 and 7 seconds
-        //std::srand(static_cast<unsigned int>(std::time(nullptr)));
-        //int delay = (std::rand() % 4) + 4;
-        //std::wcout << L"[*] Waiting " << delay << L" seconds before reconnecting internet..." << std::endl;
-
-        //Sleep(delay * 1000);
-
-        //// Step 4: Re-enable internet
-        //std::wcout << L"[*] Re-enabling internet..." << std::endl;
-        //if (!NetworkManager::SetInterfaceState(m_adapterName, true)) {
-        //    std::wcout << L"Warning: Failed to re-enable network adapter." << std::endl;
-        //}
 
         std::wcout << L"[*] Done." << std::endl;
         return true;
@@ -291,7 +234,7 @@ int wmain(int argc, wchar_t* argv[]) {
     // Configuration - you can modify these paths or make them command line arguments
     std::wstring adapterName = L"Wi-Fi";
     std::wstring gamePath = L"D:\\HoYoPlay\\games\\Genshin Impact game\\GenshinImpact.exe";
-    std::wstring dllPath = L"D:\\Desktop\\GICheat\\x64\\Debug\\GICheat.dll"; // Change this to your DLL path
+    std::wstring dllPath = L"D:\\Desktop\\GICheat\\x64\\Debug\\Cheat.dll"; // Change this to your DLL path
 
     // Use command line arguments if provided
     if (argc > 1) dllPath = argv[1];
@@ -308,8 +251,5 @@ int wmain(int argc, wchar_t* argv[]) {
         return 1;
     }
 
-    //std::wcout << L"Press any key to exit..." << std::endl;
-    //std::cin.get();
-
     return 0;
-}////////////////////////
+}
