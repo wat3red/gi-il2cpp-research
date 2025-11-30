@@ -26,10 +26,10 @@
 
 // Globals
 uintptr_t g_base = 0;
-FILE* g_LogFile = nullptr;
+FILE* g_log_file = nullptr;
 bool g_blockPackets = true;
 
-std::unordered_map<Il2CppType*, std::string> g_cachedTypes;
+std::unordered_map<Il2CppType*, std::string> g_cached_types;
 
 // Function pointers
 typedef int (WINAPI* send_t)(SOCKET, const char*, int, int);
@@ -138,8 +138,8 @@ std::string StripNamespaces(const std::string& full)
 
 std::string GetTypeName(Il2CppType* type, int format = 0)
 {
-	if (g_cachedTypes.find(type) != g_cachedTypes.end())
-		return g_cachedTypes[type];
+	if (g_cached_types.find(type) != g_cached_types.end())
+		return g_cached_types[type];
 
 	if (!type) return "unknown";
 
@@ -166,14 +166,16 @@ std::string GetTypeName(Il2CppType* type, int format = 0)
 	// free temp if allocator used (pseudocode calls sub_8D3AD0(v10))
 	il2cpp_free_temp_str(out);
 
-	g_cachedTypes[type] = result;
+	g_cached_types[type] = result;
 
 	return result;
 }
 
-void DumpClassInfo(Il2CppClass* classPtr) {
+void DumpClassInfo(int32_t type_def_index, Il2CppClass* classPtr) {
 	std::string className = il2cpp_class_get_name(classPtr);
 	std::string namespaceName = il2cpp_class_get_namespace(classPtr);
+
+	Log("// TypeDefIndex: %d\n", type_def_index);
 
 	std::stringstream outPut;
 	uint32_t parentToken = *(uint32_t*)((uintptr_t)classPtr + 0xAC);
@@ -318,7 +320,8 @@ void DumpClassInfo(Il2CppClass* classPtr) {
 			il2cpp_method_get_name(method),
 			paramList.c_str(),
 			slot,
-			(*(uintptr_t*)((uintptr_t)method)) - g_base, flags);
+			(*(uintptr_t*)((uintptr_t)method)) - g_base,
+			flags);
 
 	}
 
@@ -342,13 +345,29 @@ void Il2CppDump() {
 		__try {
 			Il2CppClass* classPtr = MetadataCache__GetTypeInfoFromTypeDefinitionIndex(i);
 			if (!classPtr) break;
-			DumpClassInfo(classPtr);
+			DumpClassInfo(i, classPtr);
 		}
 		__except (EXCEPTION_EXECUTE_HANDLER) {
 			printf("Exception occurred while dumping class at index %d\n", i);
 			break;
 		}
 	}
+}
+
+// === Packet Blocker Hooks ===
+bool InitBlockingHooks() {
+	if (MH_Initialize() != MH_OK) {
+		Log("MinHook init failed!\n");
+		return 0;
+	}
+
+	MH_CreateHookApi(L"ws2_32", "send", h_send, (LPVOID*)&o_send);
+	MH_CreateHookApi(L"ws2_32", "WSASend", h_WSASend, (LPVOID*)&o_WSASend);
+	MH_CreateHookApi(L"ws2_32", "connect", h_connect, (LPVOID*)&o_connect);
+
+	MH_EnableHook(MH_ALL_HOOKS);
+
+	return 1;
 }
 
 // Thread entry: initialize console, open dump file, resolve function ptrs, hook
@@ -370,11 +389,6 @@ DWORD WINAPI StartThread(LPVOID)
 
 	g_base = (uintptr_t)GetModuleHandle(NULL);
 	Log("Game Base: 0x%p\n", (void*)g_base);
-
-	if (MH_Initialize() != MH_OK) {
-		Log("MinHook init failed!\n");
-		return 1;
-	}
 
 	// Resolve known offsets (update offsets for your target)
 	il2cpp_class_get_methods = (decltype(il2cpp_class_get_methods))(g_base + 0x43A650);
@@ -398,17 +412,17 @@ DWORD WINAPI StartThread(LPVOID)
 
 	MetadataCache__GetTypeInfoFromTypeDefinitionIndex = (decltype(MetadataCache__GetTypeInfoFromTypeDefinitionIndex))(g_base + 0x446450);
 
-	// === Packet Blocker Hooks ===
-	MH_CreateHookApi(L"ws2_32", "send", h_send, (LPVOID*)&o_send);
-	MH_CreateHookApi(L"ws2_32", "WSASend", h_WSASend, (LPVOID*)&o_WSASend);
-	MH_CreateHookApi(L"ws2_32", "connect", h_connect, (LPVOID*)&o_connect);
-
-	MH_EnableHook(MH_ALL_HOOKS);
+	//MH_EnableHook(MH_ALL_HOOKS);
 
 	std::thread blockPacketsThread(([]() { Sleep(10000); g_blockPackets = false; }));
 	blockPacketsThread.detach();
 
-	Sleep(10000);
+	while (!FindWindowA("UnityWndClass", nullptr))
+	{
+		Sleep(100);
+	}
+
+	Sleep(15000);
 	printf("Starting dump\n");
 	Il2CppDump();
 
@@ -420,21 +434,22 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 {
 	if (ul_reason_for_call == DLL_PROCESS_ATTACH) {
 		DisableThreadLibraryCalls(hModule);
-		CreateThread(NULL, 0, StartThread, NULL, 0, NULL);
+		if (InitBlockingHooks())
+			CreateThread(NULL, 0, StartThread, NULL, 0, NULL);
 	}
 	else if (ul_reason_for_call == DLL_PROCESS_DETACH) {
 		// flush + close dump file
-		if (g_LogFile) {
-			fflush(g_LogFile);
-			int fd = _fileno(g_LogFile);
+		if (g_log_file) {
+			fflush(g_log_file);
+			int fd = _fileno(g_log_file);
 			if (fd != -1) {
 				intptr_t osHandle = _get_osfhandle(fd);
 				if (osHandle != -1 && osHandle != (intptr_t)INVALID_HANDLE_VALUE) {
 					FlushFileBuffers((HANDLE)osHandle);
 				}
 			}
-			fclose(g_LogFile);
-			g_LogFile = nullptr;
+			fclose(g_log_file);
+			g_log_file = nullptr;
 		}
 
 		MH_Uninitialize();

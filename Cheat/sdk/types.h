@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Windows.h>
-#include "il2cpp_types.h"
+#include "../il2cpp_types.h"
 #include <string>
 #include <vector>
 
@@ -212,7 +212,7 @@ namespace Unity {
 		char* m_FirstChar;
 
 		static String* FromCString(std::string text);
-		const char* ToCString();
+		const char* c_str();
 	};
 
 	struct Vector3 {
@@ -229,6 +229,10 @@ namespace Unity {
 		Vector3(float x, float y, float z) : x(x), y(y), z(z) {}
 		Vector3() {}
 
+		std::string ToString() {
+			return std::to_string(this->x) + ", " + std::to_string(this->y) + ", " + std::to_string(this->z);
+		}
+
 		static Vector3 Null() {
 			return { 0, 0, 0 };
 		}
@@ -236,11 +240,13 @@ namespace Unity {
 
 	class Transform {
 	public:
-		Vector3 getPosition();
-		void setPosition(Vector3 pos);
+		Vector3 GetPosition();
+		void SetPosition(Vector3 pos);
 	};
 
-	struct Component {};
+	struct Component {
+		Transform* GetTransform();
+	};
 
 	struct Object {};
 
@@ -261,11 +267,11 @@ namespace Unity {
 		Confined = 2
 	};
 
-	struct Cursor {
+	/*struct Cursor {
 		static void set_visible(bool value);
 		static bool get_visible();
 		static void set_lockState(CursorLockMode target);
-	};
+	};*/
 
 	struct Bounds {
 		Vector3 center;
@@ -276,7 +282,15 @@ namespace Unity {
 		void set_text(String* text);
 	};
 
-	struct Camera {
+	struct Behaviour : Component {
+	};
+
+	struct Camera : Behaviour {
+		//static Camera* get_current();
+		static Camera* GetMain();
+
+		Vector3 WorldToScreenPoint(Vector3 position);
+		Vector3 WorldToViewportPoint(Vector3 position);
 		void set_fieldOfView(float value);
 	};
 
@@ -368,32 +382,32 @@ namespace MoleMole {
 
 	class BaseEntity {
 	public:
-		Unity::Vector3 getPosition();
-		void setPosition(Unity::Vector3 pos);
+		Unity::Vector3 GetPosition();
+		//void setPosition(Unity::Vector3 pos);
 
-		Unity::GameObject* get_GameObject();
+		Unity::GameObject* GetGameObject();
 
-		uint32_t runtimeId();
-		EntityType type();
+		//uint32_t runtimeId();
+		//EntityType type();
 
-		Unity::String* name();
+		Unity::String* GetName();
 
-		void* animator();
+		void* GetAnimator();
 	};
 
 	class EntityManager {
 	public:
-		static EntityManager* get_EntityManager();
-		std::vector<BaseEntity*> entities();
-		BaseEntity* avatar();
+		static EntityManager* GetEntityManager();
+		std::vector<BaseEntity*> GetEntities();
+		BaseEntity* GetAvatar();
 	};
 
-	class LoadingManager {
+	/*class LoadingManager {
 	public:
 		static LoadingManager* get_LoadingManager();
 
 		bool IsLoaded();
-	};
+	};*/
 
 	struct SceneAvatarInfo {};
 
@@ -429,3 +443,4 @@ namespace MoleMole {
 		uint32_t a9;
 	};
 }
+////////////

@@ -1083,7 +1083,7 @@ typedef struct Il2CppCodeGenModule Il2CppCodeGenModule;
 typedef struct VirtualInvokeData
 {
     Il2CppMethodPointer methodPtr;
-    const MethodInfo* method;
+    MethodInfo* method;
 } VirtualInvokeData;
 typedef enum Il2CppTypeNameFormat
 {
