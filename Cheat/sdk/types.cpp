@@ -29,6 +29,10 @@ Unity::GameObject* MoleMole::BaseEntity::GetGameObject() {
 	return BaseEntity_get_gameObject(this);
 }
 
+MoleMole::EntityType MoleMole::BaseEntity::GetType() {
+	return *(MoleMole::EntityType*)((uintptr_t)this + 0x438); // DGHCHNBGOPB
+}
+
 Unity::String* MoleMole::BaseEntity::GetName() {
 	//return *(Unity::String**)((uintptr_t)this + 0xA8); // get alias
 	//return ((Unity::String * (*)(MoleMole::BaseEntity*))(g_game_base_addr + 0xC807F00))(this);

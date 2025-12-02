@@ -144,6 +144,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="config\config_manager.h" />
+    <ClInclude Include="config\config_var.h" />
+    <ClInclude Include="config\imgui_config.h" />
+    <ClInclude Include="config\json.hpp" />
+    <ClInclude Include="config\settings.h" />
     <ClInclude Include="directx_hook.h" />
     <ClInclude Include="features\esp.h" />
     <ClInclude Include="features\feature.h" />
@@ -173,6 +178,9 @@
     <ClInclude Include="sdk\types.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="config\config_manager.cpp" />
+    <ClCompile Include="config\imgui_config.cpp" />
+    <ClCompile Include="config\settings.cpp" />
     <ClCompile Include="directx_hook.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="features\esp.cpp" />

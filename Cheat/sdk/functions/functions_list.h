@@ -6,9 +6,8 @@ RESOLVE_BY_OFFSET(Unity::Transform*, Component_get_transform, 0x14CB0640, (Unity
 RESOLVE_BY_OFFSET(int32_t, Screen_get_height, 0x14CB6F90, ())
 RESOLVE_BY_OFFSET(int32_t, Screen_get_width, 0x14CB6F80, ())
 
-RESOLVE_BY_OFFSET(int32_t, Camera_get_pixelWidth, 0x14C9F370, (Unity::Camera* _this))
-RESOLVE_BY_OFFSET(int32_t, Camera_get_pixelHeight, 0x14C9F380, (Unity::Camera* _this))
-
+//RESOLVE_BY_OFFSET(int32_t, Camera_get_pixelWidth, 0x14C9F370, (Unity::Camera* _this))
+//RESOLVE_BY_OFFSET(int32_t, Camera_get_pixelHeight, 0x14C9F380, (Unity::Camera* _this))
 RESOLVE_BY_OFFSET(Unity::Vector3, Camera_WorldToScreenPoint, 0x14C9F9F0, (Unity::Camera* _this, Unity::Vector3 position))
 RESOLVE_BY_OFFSET(Unity::Vector3, Camera_WorldToViewportPoint, 0x14C9FB00, (Unity::Camera* _this, Unity::Vector3 position))
 //RESOLVE_BY_OFFSET(Unity::Camera*, Camera_get_current, 0x14C9FE40, ())

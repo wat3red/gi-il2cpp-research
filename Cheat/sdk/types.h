@@ -275,7 +275,7 @@ namespace Unity {
 
 	struct Bounds {
 		Vector3 center;
-		Vector3 extent;
+		Vector3 extents;
 	};
 
 	struct Text {
@@ -377,7 +377,8 @@ namespace MoleMole {
 		UgcSpecialGadget = 73,
 		UgcTowerLevelUpGadget = 74,
 		JourneyGearOperatorGadget = 75,
-		CurveMoveGadget = 76
+		CurveMoveGadget = 76,
+		MagnetPlant = 77
 	};
 
 	class BaseEntity {
@@ -388,7 +389,7 @@ namespace MoleMole {
 		Unity::GameObject* GetGameObject();
 
 		//uint32_t runtimeId();
-		//EntityType type();
+		EntityType GetType();
 
 		Unity::String* GetName();
 
