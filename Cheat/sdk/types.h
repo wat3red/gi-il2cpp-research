@@ -211,18 +211,44 @@ namespace Unity {
 		int32_t m_StringLength;
 		char* m_FirstChar;
 
-		static String* FromCString(std::string text);
+		static String* FromCString(const char* c_str);
 		const char* c_str();
 	};
 
+	struct DelegateData : Il2CppObject {
+		void* target_type; // 0x10,
+		String* method_name; // 0x18
+		bool curried_first_arg; // 0x20
+	};
+
+	struct Delegate : Il2CppObject {
+		void* method_ptr; // 0x10
+		void* invoke_impl; // 0x18
+		Il2CppObject* m_target; // 0x20
+		void* method; // 0x28
+		void* delegate_trampoline; // 0x30
+		void* extra_arg; // 0x38
+		void* method_code; // 0x40
+		MethodInfo method_info; // 0x48
+		MethodInfo original_method_info; // 0x50
+		DelegateData* data; // 0x58
+		bool method_is_virtual; // 0x60
+	};
+
+	struct MulticastDelegate : Delegate {
+		Il2Cpp::Array<Delegate>* delegates; // 0x68
+	};
+
+	struct Action : MulticastDelegate {};
+
 	struct Vector3 {
 		float x = 0, y = 0, z = 0;
-		float distance(Vector3 b) {
+		float Distance(Vector3 b) {
 			return sqrt(
 				pow(x - b.x, 2) + pow(y - b.y, 2) + pow(z - b.z, 2)
 			);
 		}
-		bool zero() { return (x == 0 && y == 0 && z == 0); }
+		bool Zero() { return (x == 0 && y == 0 && z == 0); }
 		Vector3 operator *(float k) { return { x * k, y * k, z * k }; }
 		Vector3 operator -(Vector3 B) { return { x - B.x, y - B.y, z - B.z }; }
 		Vector3 operator +(Vector3 B) { return { x + B.x, y + B.y, z + B.z }; }
@@ -443,5 +469,8 @@ namespace MoleMole {
 		uint32_t ulong;
 		uint32_t a9;
 	};
+
+	struct SingletonManager {
+		static Il2CppObject* GetSingletonInstance(const char* typeName);
+	};
 }
-////////////

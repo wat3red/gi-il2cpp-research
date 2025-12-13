@@ -148,11 +148,13 @@
     <ClInclude Include="config\config_var.h" />
     <ClInclude Include="config\imgui_config.h" />
     <ClInclude Include="config\json.hpp" />
-    <ClInclude Include="config\settings.h" />
+    <ClInclude Include="config\config.h" />
     <ClInclude Include="directx_hook.h" />
+    <ClInclude Include="features\autotalk.h" />
     <ClInclude Include="features\esp.h" />
     <ClInclude Include="features\feature.h" />
     <ClInclude Include="features\features.h" />
+    <ClInclude Include="features\map_teleport.h" />
     <ClInclude Include="gui\gui.h" />
     <ClInclude Include="gui\menu.h" />
     <ClInclude Include="il2cpp_types.h" />
@@ -180,11 +182,13 @@
   <ItemGroup>
     <ClCompile Include="config\config_manager.cpp" />
     <ClCompile Include="config\imgui_config.cpp" />
-    <ClCompile Include="config\settings.cpp" />
+    <ClCompile Include="config\config.cpp" />
     <ClCompile Include="directx_hook.cpp" />
     <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="features\autotalk.cpp" />
     <ClCompile Include="features\esp.cpp" />
     <ClCompile Include="features\features.cpp" />
+    <ClCompile Include="features\map_teleport.cpp" />
     <ClCompile Include="gui\gui.cpp" />
     <ClCompile Include="gui\menu.cpp" />
     <ClCompile Include="lib\imgui\backends\imgui_impl_dx11.cpp" />

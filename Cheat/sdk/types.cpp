@@ -39,6 +39,11 @@ Unity::String* MoleMole::BaseEntity::GetName() {
 	return BaseEntity_GetName(this);
 }
 
+Unity::String* Unity::String::FromCString(const char* c_str)
+{
+	return String_CreateString((char*)c_str);
+}
+
 const char* Unity::String::c_str() {
 	//return ((const char* (*)(Unity::String*))(g_game_base_addr + 0x3F35E0))(this);
 	return Marshal_StringToHGlobalAnsi(this);
@@ -74,4 +79,9 @@ Unity::Vector3 Unity::Camera::WorldToViewportPoint(Vector3 position) {
 
 Unity::Transform* Unity::Component::GetTransform() {
 	return Component_get_transform(this);
+}
+
+Il2CppObject* MoleMole::SingletonManager::GetSingletonInstance(const char* typeName)
+{
+	return SingletonManager_GetSingletonInstance(SingletonManager_get_Instance(), Unity::String::FromCString(typeName));
 }

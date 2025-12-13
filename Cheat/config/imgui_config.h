@@ -1,7 +1,8 @@
 #pragma once
 
-#include "config_var.h"
 #include <imgui/imgui.h>
+
+#include "config_var.h"
 #include "../sdk/types.h"
 
 namespace ImGuiEx {

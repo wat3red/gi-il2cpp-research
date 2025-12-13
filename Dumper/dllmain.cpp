@@ -24,6 +24,9 @@
 #pragma comment(lib, "dbghelp.lib")
 #pragma comment(lib, "ws2_32.lib")
 
+// 48 8B 05 ? ? ? ? ? ? ? 4D 39 C8 75 ? 48 83 C1
+#define METADATA_BASE_POINTER 0x4C7B1F0
+
 // Globals
 uintptr_t g_base = 0;
 FILE* g_log_file = nullptr;
@@ -49,7 +52,8 @@ Il2CppClass* (*il2cpp_class_from_type)(const Il2CppType* type) = nullptr;
 
 const char* (*il2cpp_method_get_name)(MethodInfo* method) = nullptr;
 const char* (*il2cpp_method_get_param_name)(MethodInfo* method, uint32_t index) = nullptr;
-uintptr_t(*il2cpp_method_get_params)(MethodInfo* method) = nullptr;
+Il2CppType* (*il2cpp_method_get_param)(MethodInfo* method, uint32_t index) = nullptr;
+//uintptr_t(*il2cpp_method_get_params)(MethodInfo* method) = nullptr;
 Il2CppType* (*il2cpp_method_get_return_type)(MethodInfo* method) = nullptr;
 
 const char* (*il2cpp_field_get_name)(FieldInfo* field) = nullptr;
@@ -138,6 +142,8 @@ std::string StripNamespaces(const std::string& full)
 
 std::string GetTypeName(Il2CppType* type, int format = 0)
 {
+	//Log("q\n");
+
 	if (g_cached_types.find(type) != g_cached_types.end())
 		return g_cached_types[type];
 
@@ -145,9 +151,17 @@ std::string GetTypeName(Il2CppType* type, int format = 0)
 
 	// v10 is an array of 4 qwords in pseudocode -> we'll use a small struct
 	uint64_t out[4] = { 0 };
+	//Log("w\n");
 
 	// Call the inlined formatter: out <- formatted string representation of 'type'
 	il2cpp_type_get_name_tmp(out, type, format);
+
+	//Log("e\n");
+
+	/*Log("0: %X \n", out[0]);
+	Log("1: %X \n", out[1]);
+	Log("2: %X \n", out[2]);
+	Log("3: %X \n", out[3]);*/
 
 	const char* cstr = nullptr;
 	// pseudocode checks v10[3] >= 0x10 then uses v10[0] else uses inline buffer inside 'out'
@@ -162,6 +176,8 @@ std::string GetTypeName(Il2CppType* type, int format = 0)
 	}
 
 	std::string result = cstr ? std::string(cstr) : std::string("unknown");
+
+	//Log("result %s\n", result.c_str());
 
 	// free temp if allocator used (pseudocode calls sub_8D3AD0(v10))
 	il2cpp_free_temp_str(out);
@@ -178,9 +194,9 @@ void DumpClassInfo(int32_t type_def_index, Il2CppClass* classPtr) {
 	Log("// TypeDefIndex: %d\n", type_def_index);
 
 	std::stringstream outPut;
-	uint32_t parentToken = *(uint32_t*)((uintptr_t)classPtr + 0xAC);
+	uint32_t parentToken = *(uint32_t*)((uintptr_t)classPtr + 0xA4); // 41 8B 87 ? ? ? ? 41 BF 00 00 00 00
 	if (parentToken != 0) {
-		Il2CppClass* parentClass = (Il2CppClass*)(**(uintptr_t**)(g_base + 0x4BAF8B0) + parentToken); // metadata_base_pointer
+		Il2CppClass* parentClass = (Il2CppClass*)(**(uintptr_t**)(g_base + METADATA_BASE_POINTER) + parentToken); // metadata_base_pointer
 		if (parentClass) {
 			std::string parentClassName = il2cpp_class_get_name(parentClass);
 			Log("// Namespace: %s\nclass %s : %s\n{\n\t// Fields \n\n", namespaceName.c_str(), className.c_str(), parentClassName.c_str());
@@ -189,9 +205,12 @@ void DumpClassInfo(int32_t type_def_index, Il2CppClass* classPtr) {
 	else {
 		Log("// Namespace: %s\nclass %s \n{\n\t// Fields \n\n", namespaceName.c_str(), className.c_str());
 	}
+	//Log("1\n");
 
 	void* fieldIter = nullptr;
 	while (FieldInfo* field = il2cpp_class_get_fields(classPtr, &fieldIter)) {
+		//Log("2\n");
+
 		int flags = il2cpp_field_get_flags(field);
 		std::string modifiers = "";
 
@@ -218,6 +237,7 @@ void DumpClassInfo(int32_t type_def_index, Il2CppClass* classPtr) {
 		if (flags & FIELD_ATTRIBUTE_HAS_FIELD_RVA)   modifiers += " rva";
 		if (flags & FIELD_ATTRIBUTE_HAS_DEFAULT)     modifiers += " default";
 		if (flags & FIELD_ATTRIBUTE_HAS_FIELD_MARSHAL) modifiers += " marshal";
+		//Log("3\n");
 
 		const char* fieldName = il2cpp_field_get_name(field);
 		int32_t offset = il2cpp_field_get_offset(field);
@@ -235,11 +255,16 @@ void DumpClassInfo(int32_t type_def_index, Il2CppClass* classPtr) {
 
 	Log("\n\t// Methods \n\n");
 
+	//Log("4\n");
 	void* methodIter = nullptr;
 	while (MethodInfo* method = il2cpp_class_get_methods(classPtr, &methodIter)) {
+		//Log("5\n");
+
 		uint8_t paramCount = *(uint8_t*)((uintptr_t)method + 0x2E);
 		int16_t slot = *(int16_t*)((uintptr_t)method + 0x2C);
 		uint16_t flags = *(uint16_t*)((uintptr_t)method + 0x2A);
+
+		//Log("6\n");
 
 		// Parse access modifiers
 		uint16_t accessMask = flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK;
@@ -293,23 +318,32 @@ void DumpClassInfo(int32_t type_def_index, Il2CppClass* classPtr) {
 
 		std::string paramList = "";
 		if (paramCount) {
-			uintptr_t paramArray = il2cpp_method_get_params(method) + 0x8;
-			for (uint8_t i = 0; i < paramCount; i++) {
-				// Each parameter is 3 pointers (0x18 bytes)
-				uintptr_t param = paramArray + ((i - 1) * 0x18);
-				if (!param) continue;
+			//Log("7\n");
 
-				Il2CppType* paramType = *(Il2CppType**)(paramArray + (i * 0x18));
+			//uintptr_t paramArray = il2cpp_method_get_params(method) + 0x8;
+			for (uint8_t i = 0; i < paramCount; i++) {
+				//Log("8\n");
+
+				// Each parameter is 3 pointers (0x18 bytes)
+				//uintptr_t param = paramArray + ((i - 1) * 0x18);
+				//if (!param) continue;
+
+				//Il2CppType* paramType = *(Il2CppType**)(paramArray + (i * 0x18));
+				Il2CppType* paramType = il2cpp_method_get_param(method, i);
 				if (!paramType) continue;
 
-				const char* paramName = *(const char**)((uintptr_t)param + 0x10);
+				const char* paramName = il2cpp_method_get_param_name(method, i);
 				if (!paramName) continue;
+
+				//Log("paramName: %s\n", paramName);
 
 				std::string typeName = StripNamespaces(GetTypeName(paramType));
 
 				paramList += typeName + std::string(" ") + (std::string)paramName + (i == paramCount - 1 ? "" : ", ");
 			}
 		}
+
+		//Log("10\n");
 
 		Il2CppType* returnType = il2cpp_method_get_return_type(method);
 		std::string returnTypeName = StripNamespaces(GetTypeName(returnType));
@@ -322,7 +356,6 @@ void DumpClassInfo(int32_t type_def_index, Il2CppClass* classPtr) {
 			slot,
 			(*(uintptr_t*)((uintptr_t)method)) - g_base,
 			flags);
-
 	}
 
 	Log("}\n\n");
@@ -390,29 +423,56 @@ DWORD WINAPI StartThread(LPVOID)
 	g_base = (uintptr_t)GetModuleHandle(NULL);
 	Log("Game Base: 0x%p\n", (void*)g_base);
 
-	// Resolve known offsets (update offsets for your target)
-	il2cpp_class_get_methods = (decltype(il2cpp_class_get_methods))(g_base + 0x43A650);
-	il2cpp_class_get_name = (decltype(il2cpp_class_get_name))(g_base + 0x5A30);
-	il2cpp_class_get_namespace = (decltype(il2cpp_class_get_namespace))(g_base + 0x3DC160);
-	il2cpp_class_get_fields = (decltype(il2cpp_class_get_fields))(g_base + 0x43A050);
-	il2cpp_class_from_type = (decltype(il2cpp_class_from_type))(g_base + 0x4373F0);
+	// E8 ? ? ? ? 48 85 C0 74 ? 48 8D 5D
+	il2cpp_class_get_methods = (decltype(il2cpp_class_get_methods))(g_base + 0x446130);
 
-	il2cpp_field_get_name = (decltype(il2cpp_field_get_name))(g_base + 0x446290);
-	il2cpp_field_get_flags = (decltype(il2cpp_field_get_flags))(g_base + 0x3DC4D0);
-	il2cpp_field_get_type = (decltype(il2cpp_field_get_type))(g_base + 0x3DC510);
-	il2cpp_field_get_offset = (decltype(il2cpp_field_get_offset))(g_base + 0x3DC500); // Socket::SetSocketOption
+	// E8 ? ? ? ? 45 33 F6 C7 85
+	il2cpp_class_get_name = (decltype(il2cpp_class_get_name))(g_base + 0xA790);
 
-	il2cpp_method_get_name = (decltype(il2cpp_method_get_name))(g_base + 0x3DCA60);
-	il2cpp_method_get_param_name = (decltype(il2cpp_method_get_param_name))(g_base + 0x3DCAC0);
-	il2cpp_method_get_params = (decltype(il2cpp_method_get_params))(g_base + 0x451910);
-	il2cpp_method_get_return_type = (decltype(il2cpp_method_get_return_type))(g_base + 0x451660);
+	// E8 ? ? ? ? 49 C7 C7 ? ? ? ? 4D 8B C7
+	il2cpp_class_get_namespace = (decltype(il2cpp_class_get_namespace))(g_base + 0x3E75E0);
 
-	il2cpp_type_get_name_tmp = (decltype(il2cpp_type_get_name_tmp))(g_base + 0x450930);
-	il2cpp_free_temp_str = (decltype(il2cpp_free_temp_str))(g_base + 0x8D3AD0);
+	// E8 ? ? ? ? 48 85 C0 75 ? E9 ? ? ? ? 89 E8
+	il2cpp_class_get_fields = (decltype(il2cpp_class_get_fields))(g_base + 0x445B30);
 
-	MetadataCache__GetTypeInfoFromTypeDefinitionIndex = (decltype(MetadataCache__GetTypeInfoFromTypeDefinitionIndex))(g_base + 0x446450);
+	// E8 ? ? ? ? 48 89 C6 44 0F B7 B0
+	il2cpp_class_from_type = (decltype(il2cpp_class_from_type))(g_base + 0x442EA0);
 
-	//MH_EnableHook(MH_ALL_HOOKS);
+	// E8 ? ? ? ? 48 89 C3 EB ? 83 BD
+	il2cpp_field_get_name = (decltype(il2cpp_field_get_name))(g_base + 0x451F50);
+
+	// E8 ? ? ? ? 48 8B CB 41 89 46
+	il2cpp_field_get_flags = (decltype(il2cpp_field_get_flags))(g_base + 0x3E7930);
+
+	// E8 ? ? ? ? 48 8B C8 49 89 46 ? E8
+	il2cpp_field_get_type = (decltype(il2cpp_field_get_type))(g_base + 0x3E7970);
+
+	// E8 ? ? ? ? 49 03 45
+	il2cpp_field_get_offset = (decltype(il2cpp_field_get_offset))(g_base + 0x3E7960); // Socket::SetSocketOption
+
+	// E8 ? ? ? ? 48 8B CE 48 2B C6
+	il2cpp_method_get_name = (decltype(il2cpp_method_get_name))(g_base + 0x3E7EC0);
+
+	// direct: 56 48 83 EC ? 0F B6 41 ? 39 D0 76 ? 89 D6 48 8B 51 ? 48 85 D2 74 ? 48 B8 ? ? ? ? ? ? ? ? ? ? ? 74 ? 89 F1 ? ? ? ? ? ? ? ? 48 83 C4
+	il2cpp_method_get_param_name = (decltype(il2cpp_method_get_param_name))(g_base + 0x3E8020);
+
+	// E8 ? ? ? ? 48 8B C8 E8 ? ? ? ? 4C 8B 4E
+	il2cpp_method_get_param = (decltype(il2cpp_method_get_param))(g_base + 0x3E7F20);
+
+	// E8 ? ? ? ? 48 89 45 ? 49 89 F2
+	//il2cpp_method_get_params = (decltype(il2cpp_method_get_params))(g_base + 0x45D610);
+
+	// E8 ? ? ? ? 48 83 C4 ? 48 89 C7 0F B6 47
+	il2cpp_method_get_return_type = (decltype(il2cpp_method_get_return_type))(g_base + 0x45D360);
+
+	// E8 ? ? ? ? 4C 8D 05 ? ? ? ? 48 8D 4D ? 48 8D 55 ? E8 ? ? ? ? 48 89 E9 4C 8D 45
+	il2cpp_type_get_name_tmp = (decltype(il2cpp_type_get_name_tmp))(g_base + 0x45C620);
+
+	// E8 ? ? ? ? B3 ? E9 ? ? ? ? 4C 8B B6
+	il2cpp_free_temp_str = (decltype(il2cpp_free_temp_str))(g_base + 0x8DFF80);
+
+	// E8 ? ? ? ? 0F B7 A8
+	MetadataCache__GetTypeInfoFromTypeDefinitionIndex = (decltype(MetadataCache__GetTypeInfoFromTypeDefinitionIndex))(g_base + 0x452110);
 
 	std::thread blockPacketsThread(([]() { Sleep(10000); g_blockPackets = false; }));
 	blockPacketsThread.detach();
@@ -456,3 +516,4 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 	}
 	return TRUE;
 }
+////////

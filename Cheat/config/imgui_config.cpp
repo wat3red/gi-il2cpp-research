@@ -77,7 +77,7 @@ bool ImGuiEx::ColorEdit4(const char* label, ConfigVar<ImColor>& var, bool showMa
 		ImGui::SetCursorPosX(min.x + avail.x - ImGui::GetFrameHeight() * 2 - style.ItemSpacing.x - style.WindowPadding.x - (ImGui::GetCurrentWindow()->ScrollbarY ? style.ScrollbarSize : 0.f));
 	}
 
-	float* value = &var.GetValue().Value.x;
+	float* value = &var.GetPointer()->Value.x;
 
 	if (ImGui::ColorEdit4(label, value, ImGuiColorEditFlags_NoInputs | (showMainLabel ? ImGuiColorEditFlags_None : ImGuiColorEditFlags_NoLabel))) {
 		var = ImColor(value[0], value[1], value[2], value[3]);

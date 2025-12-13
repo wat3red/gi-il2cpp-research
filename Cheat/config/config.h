@@ -11,6 +11,9 @@ public:
 	struct ESP {
 		ConfigVar<bool> enabled{ ("esp"), ("enabled"), false };
 
+		ConfigVar<bool> distance{ ("esp"), ("distance"), false }; // New: Draw distance number
+		ConfigVar<float> maxDistance{ ("esp"), ("maxDistance"), 100.0f }; // New: Distance Limiter
+
 		ConfigVar<bool> box2D{ ("esp"), ("box2d"), false };
 		ConfigVar<ImColor> box2DColor{ ("esp"), ("box2DColor"), ImColor(255, 255, 255, 255) };
 
@@ -23,10 +26,12 @@ public:
 
 		ConfigVar<bool> line{ ("esp"), ("line"), false };
 		ConfigVar<ImColor> lineColor{ ("esp"), ("lineColor"), ImColor(255, 255, 255, 255) };
-		ConfigVar<int> lineBase{ ("esp"), ("lineBase"), 0 };
+		ConfigVar<int> lineBase{ ("esp"), ("lineBase"), 0 }; // 0: Bottom, 1: Center, 2: Top
 		ConfigVar<int> lineTarget{ ("esp"), ("lineTarget"), 0 };
 		ConfigVar<float> lineThickness{ ("esp"), ("lineThickness"), 2.f };
 
+		// FILTERS
+		// We map the Enum ID to a ConfigVar. 
 		std::map<int32_t, ConfigVar<bool>> filters;
 		
 		ESP() {
@@ -41,16 +46,25 @@ public:
 		}
 	} esp;
 
+	struct Autotalk {
+		ConfigVar<bool> enabled{ "autotalk", "enabled", false };
+		ConfigVar<bool> auto_choose_reply{ "autotalk", "auto_choose_reply", false };
+	} autotalk;
+
+	struct MapTeleport {
+		ConfigVar<bool> enabled{ "map_teleport", "enabled", false };
+	} map_teleport;
+
 	struct SettingsUI {
 		ConfigVar<int> theme{ ("settingsUI"), ("theme"), 0 };
 		ConfigVar<float> menuScale{ ("settingsUI"), ("menuScale"), 1.f };
 
 		struct Hotkeys {
-			ConfigVar<int> openMenu{ ("settingsUI.hotkeys"), ("openMenu"), VK_INSERT };
+			ConfigVar<int> open_menu{ ("settingsUI.hotkeys"), ("openMenu"), VK_INSERT };
 			ConfigVar<int> esp{ ("settingsUI.hotkeys"), ("esp"), 0 };
 
 		} hotkeys;
-	} settingsUI;
+	} ui_settings;
 };
 
 extern Config config;

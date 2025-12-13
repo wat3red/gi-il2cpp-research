@@ -1,3 +1,35 @@
+//public virtual Void ClosePage();
+RESOLVE_BY_OFFSET(void, BasePageContext_ClosePage, 0x736BAC0, (void* _this))
+
+//public static Single CalcCurrentGroundHeight(Single x, Single z); // Slot: -1, RVA: 0xF239F40, FLAGS: 0x96
+RESOLVE_BY_OFFSET(float, Miscs_CalcCurrentGroundHeight, 0xF239F40, (float x, float z))
+
+//public static Vector3d GetRelativePosition(Vector3d pos); // Slot: -1, RVA: 0x5D906E0, FLAGS: 0x96
+RESOLVE_BY_OFFSET(Unity::Vector3, WorldShiftManager_GetRelativePosition, 0x5D906E0, (Unity::Vector3 pos))
+
+//public static Vector3 GenWorldPos(Vector2 levelMapPos); // Slot: -1, RVA: 0xF26AAF0, FLAGS: 0x96
+RESOLVE_BY_OFFSET(Unity::Vector3, Miscs_GenWorldPos, 0xF26AAF0, (Unity::Vector2 levelMapPos))
+
+//public static Boolean ScreenPointToLocalPointInRectangle(RectTransform rect, Vector2 screenPoint, Camera cam, Vector2& localPoint); // Slot: -1, RVA: 0x14D55D90, FLAGS: 0x96
+RESOLVE_BY_OFFSET(bool, RectTransformUtility_ScreenPointToLocalPointInRectangle, 0x14D55D90, (void* rect, Unity::Vector2 screenPoint, Unity::Camera* cam, Unity::Vector2& localPoint))
+
+//public Transform get_mapBackground(); // Slot: -1, RVA: 0xC317C20, FLAGS: 0x886
+RESOLVE_BY_OFFSET(Unity::Transform*, MonoInLevelMapPage_get_mapBackground, 0xC317C20, (void* _this))
+//public Rect get_mapRect(); // Slot: -1, RVA: 0xC317BE0, FLAGS: 0x886
+RESOLVE_BY_OFFSET(MoleMole::Rect, MonoInLevelMapPage_get_mapRect, 0xC317BE0, (void* _this))
+
+RESOLVE_BY_OFFSET(Il2CppObject*, SingletonManager_GetSingletonInstance, 0x5BBAF50, (MoleMole::SingletonManager* _this, Unity::String* typeName))
+RESOLVE_BY_OFFSET(MoleMole::SingletonManager*, SingletonManager_get_Instance, 0x5BBB080, ())
+
+RESOLVE_BY_OFFSET(void, HDIKLPILBAC_CFDHCLDPCHI, 0xE6758C0, (void* _this))
+
+//public Void OnSelectItem(); // Slot: -1, RVA: 0xCCC2E30, FLAGS: 0x86
+RESOLVE_BY_OFFSET(void, MonoSelectItem_OnSelectItem, 0xCCC2E30, (void* _this))
+
+RESOLVE_BY_OFFSET(void*, MonoReusableList_get_Item, 0x8040AE0, (void* _this, int32_t index))
+
+RESOLVE_BY_OFFSET(Unity::Bounds, Action_Invoke, 0x14591C10, (void* _this))
+
 //public static Bounds [A-Z]{11}\(GameObject [A-Z]{11}\)
 RESOLVE_BY_OFFSET(Unity::Bounds, StageManager_GetBounds, 0x61A6140, (Unity::GameObject* _this))
 
@@ -28,6 +60,9 @@ RESOLVE_BY_OFFSET(Unity::GameObject*, BaseEntity_get_gameObject, 0xC7F3490, (Mol
 RESOLVE_BY_OFFSET(Unity::String*, BaseEntity_GetName, 0xC807F00, (MoleMole::BaseEntity* _this))
 
 RESOLVE_BY_OFFSET(const char*, Marshal_StringToHGlobalAnsi, 0x3F35E0, (Unity::String* string))
+
+// private String CreateString(Char* value); // Slot: -1, RVA: 0x14523AF0, FLAGS: 0x81
+RESOLVE_BY_OFFSET(Unity::String*, String_CreateString, 0x14523AF0, (char* value))
 
 RESOLVE_BY_OFFSET(Unity::Transform*, GameObject_GetTransform, 0x1025420, (Unity::GameObject* _this))
 

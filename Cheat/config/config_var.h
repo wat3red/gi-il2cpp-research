@@ -5,20 +5,22 @@
 template <typename T>
 class ConfigVar {
 private:
-	std::string path, key;
+	std::string path;
+	std::string key;
 	mutable T value;
-	mutable bool initialized = false; // Lazy loading flag
+	mutable bool loaded = false; // Lazy loading flag
 
 	void Load() const {
-		if (!initialized) {
+		if (!loaded) {
 			value = ConfigManager::GetValue<T>(path, key, value);
-			initialized = true;
+			loaded = true;
 		}
 	}
 
 public:
 	ConfigVar(const std::string& path, const std::string& key, const T& defaultValue)
-		: path(path), key(key), value(defaultValue) {}
+		: path(path), key(key), value(defaultValue) {
+	}
 
 	operator T() const { Load(); return value; }
 
@@ -42,7 +44,7 @@ public:
 	const std::string& GetKey() const { return key; }
 
 	T* GetPointer() { Load(); return &value; }  // Pointer accessor
-	T& GetValue() { Load(); return value; }  // Value accessor
+	T GetValue() const { Load(); return value; }  // Value accessor
 	void SetValue(const T& v) { Load(); value = v; }
 };
 

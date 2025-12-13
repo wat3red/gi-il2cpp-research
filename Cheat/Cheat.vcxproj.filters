@@ -108,7 +108,13 @@
     <ClInclude Include="config\json.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="config\settings.h">
+    <ClInclude Include="config\config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="features\autotalk.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="features\map_teleport.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -182,7 +188,13 @@
     <ClCompile Include="config\imgui_config.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="config\settings.cpp">
+    <ClCompile Include="config\config.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="features\autotalk.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="features\map_teleport.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
