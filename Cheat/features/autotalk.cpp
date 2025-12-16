@@ -24,11 +24,11 @@ namespace features {
 
 	void Autotalk::DrawBackgroundUI() {}
 
-	// "class MoleMole.InLevelCutScenePageContext " found via "private MonoInLevelCutScenePage " HDIKLPILBAC
-	// "class MoleMole.TalkDialogContext " found via "private MonoTalkDialog " KOCPCIJOAGC
+	// "class MoleMole.InLevelCutScenePageContext " found via "private MonoInLevelCutScenePage " 
+	// "class MoleMole.TalkDialogContext " found via "private MonoTalkDialog " 
 	void (*MonoInLevelCutScenePageContext_UpdateView)(void* _this);
 	void hMonoInLevelCutScenePageContext_UpdateView(void* _this) {
-		void* talkDialogContext = *reinterpret_cast<void**>((uintptr_t)_this + 0x238);
+		void* talkDialogContext = *reinterpret_cast<void**>((uintptr_t)_this + 0x220);
 		if (talkDialogContext != nullptr)
 		{
 			float* protectTime = reinterpret_cast<float*>((uintptr_t)talkDialogContext + 0x2F0);
@@ -82,8 +82,9 @@ namespace features {
 	}
 
 	void Autotalk::OnInit() {
-		MH_CreateHook((LPVOID)(g_game_base_addr + 0xE6762F0), (LPVOID)hMonoInLevelCutScenePageContext_UpdateView, (LPVOID*)&MonoInLevelCutScenePageContext_UpdateView);
-		MH_CreateHook((LPVOID)(g_game_base_addr + 0xA696820), (LPVOID)hMonoTypeWriter_Update, (LPVOID*)&MonoTypeWriter_Update);
+		// "private MonoInLevelCutScenePage " 
+		MH_CreateHook((LPVOID)(g_game_base_addr + 0xBA0F460), (LPVOID)hMonoInLevelCutScenePageContext_UpdateView, (LPVOID*)&MonoInLevelCutScenePageContext_UpdateView);
+		MH_CreateHook((LPVOID)(g_game_base_addr + 0xA8C4D10), (LPVOID)hMonoTypeWriter_Update, (LPVOID*)&MonoTypeWriter_Update);
 	}
 
 	void Autotalk::OnUpdate() {}

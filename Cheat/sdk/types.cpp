@@ -51,13 +51,13 @@ const char* Unity::String::c_str() {
 
 Unity::Transform* Unity::GameObject::GetTransform() {
 	//return ((Unity::Transform * (*)(Unity::GameObject*))(g_game_base_addr + 0x1025420))(this);
-	return GameObject_GetTransform(this);
+	return GameObject_get_transform(this);
 }
 
 Unity::Vector3 Unity::Transform::GetPosition() {
 	Unity::Vector3 returnValue;
 	//((Unity::Vector3(*)(Unity::Vector3*, Unity::Transform*))(g_game_base_addr + 0x14CA9CB0))(&returnValue, this);
-	Transform_GetPosition(&returnValue, this);
+	Transform_get_position(&returnValue, this);
 	return returnValue;
 }
 

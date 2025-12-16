@@ -53,7 +53,6 @@ Il2CppClass* (*il2cpp_class_from_type)(const Il2CppType* type) = nullptr;
 const char* (*il2cpp_method_get_name)(MethodInfo* method) = nullptr;
 const char* (*il2cpp_method_get_param_name)(MethodInfo* method, uint32_t index) = nullptr;
 Il2CppType* (*il2cpp_method_get_param)(MethodInfo* method, uint32_t index) = nullptr;
-//uintptr_t(*il2cpp_method_get_params)(MethodInfo* method) = nullptr;
 Il2CppType* (*il2cpp_method_get_return_type)(MethodInfo* method) = nullptr;
 
 const char* (*il2cpp_field_get_name)(FieldInfo* field) = nullptr;
@@ -69,7 +68,7 @@ Il2CppClass* (*MetadataCache__GetTypeInfoFromTypeDefinitionIndex)(int32_t typeDe
 int WINAPI h_send(SOCKET s, const char* buf, int len, int flags)
 {
 	if (g_blockPackets)
-		return len; // притворяемся, что отправили
+		return len;
 
 	return o_send(s, buf, len, flags);
 }
@@ -261,7 +260,7 @@ void DumpClassInfo(int32_t type_def_index, Il2CppClass* classPtr) {
 		//Log("5\n");
 
 		uint8_t paramCount = *(uint8_t*)((uintptr_t)method + 0x2E);
-		int16_t slot = *(int16_t*)((uintptr_t)method + 0x2C);
+		int16_t slot = *(int16_t*)((uintptr_t)method + 0x28); // 48 C7 40 ? 00 00 00 00 ? ? ? 66 C7 40
 		uint16_t flags = *(uint16_t*)((uintptr_t)method + 0x2A);
 
 		//Log("6\n");
@@ -324,11 +323,6 @@ void DumpClassInfo(int32_t type_def_index, Il2CppClass* classPtr) {
 			for (uint8_t i = 0; i < paramCount; i++) {
 				//Log("8\n");
 
-				// Each parameter is 3 pointers (0x18 bytes)
-				//uintptr_t param = paramArray + ((i - 1) * 0x18);
-				//if (!param) continue;
-
-				//Il2CppType* paramType = *(Il2CppType**)(paramArray + (i * 0x18));
 				Il2CppType* paramType = il2cpp_method_get_param(method, i);
 				if (!paramType) continue;
 
@@ -342,20 +336,22 @@ void DumpClassInfo(int32_t type_def_index, Il2CppClass* classPtr) {
 				paramList += typeName + std::string(" ") + (std::string)paramName + (i == paramCount - 1 ? "" : ", ");
 			}
 		}
-
 		//Log("10\n");
 
 		Il2CppType* returnType = il2cpp_method_get_return_type(method);
 		std::string returnTypeName = StripNamespaces(GetTypeName(returnType));
 
-		Log("\t%s%s %s(%s); // Slot: %d, RVA: 0x%X, FLAGS: 0x%X\n",
+		std::string slotStr;
+		if (slot != -1) slotStr = " Slot: " + std::to_string(slot) + ",";
+
+		Log("\t%s%s %s(%s); // FLAGS: 0x%X,%s RVA: 0x%X \n",
 			modifiers.c_str(),
 			returnTypeName.c_str(),
 			il2cpp_method_get_name(method),
 			paramList.c_str(),
-			slot,
-			(*(uintptr_t*)((uintptr_t)method)) - g_base,
-			flags);
+			flags,
+			slotStr.c_str(),
+			(*(uintptr_t*)((uintptr_t)method + 0x8)) - g_base); // probably 48 83 78 ? 00 74 ? 48 83 C4 ? 5E 5D
 	}
 
 	Log("}\n\n");
@@ -459,9 +455,6 @@ DWORD WINAPI StartThread(LPVOID)
 	// E8 ? ? ? ? 48 8B C8 E8 ? ? ? ? 4C 8B 4E
 	il2cpp_method_get_param = (decltype(il2cpp_method_get_param))(g_base + 0x3E7F20);
 
-	// E8 ? ? ? ? 48 89 45 ? 49 89 F2
-	//il2cpp_method_get_params = (decltype(il2cpp_method_get_params))(g_base + 0x45D610);
-
 	// E8 ? ? ? ? 48 83 C4 ? 48 89 C7 0F B6 47
 	il2cpp_method_get_return_type = (decltype(il2cpp_method_get_return_type))(g_base + 0x45D360);
 
@@ -516,4 +509,3 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 	}
 	return TRUE;
 }
-////////
