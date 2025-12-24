@@ -16,19 +16,20 @@
 #include <fcntl.h>
 #include <sstream>
 #include <filesystem>
+#include <stdio.h>
+#include <regex>
 
 #include "lib/minhook/include/MinHook.h"
 #include "il2cpp_types.h"
 #include "logger.h"
+#include "dump.h"
 
 #pragma comment(lib, "dbghelp.lib")
 #pragma comment(lib, "ws2_32.lib")
 
-// 48 8B 05 ? ? ? ? ? ? ? 4D 39 C8 75 ? 48 83 C1
-#define METADATA_BASE_POINTER 0x4C7B1F0
-
 // Globals
 uintptr_t g_base = 0;
+FILE* g_structs_file = nullptr;
 FILE* g_log_file = nullptr;
 bool g_blockPackets = true;
 
@@ -64,6 +65,7 @@ void(*il2cpp_type_get_name_tmp)(void* out_str_struct, Il2CppType* type, int form
 void(*il2cpp_free_temp_str)(void* out_str_struct) = nullptr;
 
 Il2CppClass* (*MetadataCache__GetTypeInfoFromTypeDefinitionIndex)(int32_t typeDefinitionIndex) = nullptr;
+uint64_t(*il2cpp__vm__GetEnumFieldValue)(Il2CppClass* enumType, FieldInfo* field) = nullptr;
 
 int WINAPI h_send(SOCKET s, const char* buf, int len, int flags)
 {
@@ -95,6 +97,33 @@ int WINAPI h_connect(SOCKET s, const sockaddr* name, int namelen)
 	}
 
 	return o_connect(s, name, namelen);
+}
+
+bool InitBlockingHooks() {
+	if (MH_Initialize() != MH_OK) {
+		Log("MinHook init failed!\n");
+		return 0;
+	}
+
+	MH_CreateHookApi(L"ws2_32", "send", h_send, (LPVOID*)&o_send);
+	MH_CreateHookApi(L"ws2_32", "WSASend", h_WSASend, (LPVOID*)&o_WSASend);
+	MH_CreateHookApi(L"ws2_32", "connect", h_connect, (LPVOID*)&o_connect);
+
+	MH_EnableHook(MH_ALL_HOOKS);
+
+	return 1;
+}
+
+void DisableLogReport()
+{
+	wchar_t filename[MAX_PATH] = {};
+	GetModuleFileName(NULL, filename, MAX_PATH);
+
+	auto path = std::filesystem::path(filename);
+	path = path.parent_path() / (path.stem().string() + "_Data") / "Plugins";
+
+	CreateFileW((path / "Astrolabe.dll").c_str(), GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	CreateFileW((path / "MiHoYoMTRSDK.dll").c_str(), GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 }
 
 std::string StripNamespaces(const std::string& full)
@@ -138,6 +167,311 @@ std::string StripNamespaces(const std::string& full)
 	return out;
 }
 
+// Helper to sanitize names for C syntax (System.Int32 -> System_Int32)
+std::string SanitizeName(std::string name) {
+	std::string out;
+	for (char c : name) {
+		if (isalnum(c) || c == '_') {
+			out += c;
+		}
+		else {
+			out += "_";
+		}
+	}
+	// Remove consecutive underscores for cleaner output
+	std::string clean;
+	bool lastUnder = false;
+	for (char c : out) {
+		if (c == '_') {
+			if (!lastUnder) clean += c;
+			lastUnder = true;
+		}
+		else {
+			clean += c;
+			lastUnder = false;
+		}
+	}
+	return clean;
+}
+
+uint8_t Il2CppTypeGetType(Il2CppType* type) {
+	return  *(uint8_t*)((uintptr_t)type + 0xA); // 0F B6 46 ? C1 E0 ? 3D ? ? ? ? 75 ? 8B 05
+}
+
+uint32_t CalculateClassSize(Il2CppClass* klass) {
+	return *(int16_t*)((uintptr_t)klass + 0xB4) - 4; // 0F B7 9F ? ? ? ? 48 89 F9
+}
+
+Il2CppClass* Il2CppClassGetParent(Il2CppClass* klass) {
+#define METADATA_BASE_POINTER 0x4C7B1F0 // 48 8B 05 ? ? ? ? ? ? ? 4D 39 C8 75 ? 48 83 C1
+	uint32_t parentToken = *(uint32_t*)((uintptr_t)klass + 0xA4); // 41 8B 87 ? ? ? ? 41 BF 00 00 00 00
+	if (!parentToken) return nullptr;
+
+	return (Il2CppClass*)(**(uintptr_t**)(g_base + METADATA_BASE_POINTER) + parentToken);
+#undef METADATA_BASE_POINTER
+}
+
+uint8_t MethodGetParamCount(MethodInfo* method) {
+	return *(uint8_t*)((uintptr_t)method + 0x2E);
+}
+
+int16_t MethodGetSlot(MethodInfo* method) {
+	return *(int16_t*)((uintptr_t)method + 0x28); // 48 C7 40 ? 00 00 00 00 ? ? ? 66 C7 40
+}
+
+uint16_t MethodGetFlags(MethodInfo* method) {
+	return *(uint16_t*)((uintptr_t)method + 0x2A);
+}
+
+uintptr_t MethodGetMethodPointer(MethodInfo* method) {
+	return *(uintptr_t*)((uintptr_t)method + 0x8);  // probably 48 83 78 ? 00 74 ? 48 83 C4 ? 5E 5D
+}
+
+std::string GetCTypeAndSize(Il2CppType* type, uint32_t& outSize) {
+	if (!type) { outSize = 8; return "void*"; }
+
+	uint8_t typeEnum = Il2CppTypeGetType(type);
+
+	outSize = 8; // Default pointer size (x64)
+	
+	switch (typeEnum) {
+	case IL2CPP_TYPE_VOID:    outSize = 0; return "void";
+	case IL2CPP_TYPE_BOOLEAN: outSize = 1; return "bool";
+	case IL2CPP_TYPE_I1:      outSize = 1; return "int8_t";
+	case IL2CPP_TYPE_U1:      outSize = 1; return "uint8_t";
+	case IL2CPP_TYPE_I2:      outSize = 2; return "int16_t";
+	case IL2CPP_TYPE_U2:      outSize = 2; return "uint16_t";
+	case IL2CPP_TYPE_CHAR:    outSize = 2; return "uint16_t"; // C# char = 2 bytes (UTF-16)
+	case IL2CPP_TYPE_I4:      outSize = 4; return "int32_t";
+	case IL2CPP_TYPE_U4:      outSize = 4; return "uint32_t";
+	case IL2CPP_TYPE_R4:      outSize = 4; return "float";
+	case IL2CPP_TYPE_I8:      outSize = 8; return "int64_t";
+	case IL2CPP_TYPE_U8:      outSize = 8; return "uint64_t";
+	case IL2CPP_TYPE_R8:      outSize = 8; return "double";
+	case IL2CPP_TYPE_I:
+	case IL2CPP_TYPE_U:       outSize = 8; return "intptr_t"; // Native int
+
+	case IL2CPP_TYPE_STRING:  outSize = 8; return "struct Il2CppString*";
+	case IL2CPP_TYPE_OBJECT:  outSize = 8; return "struct Il2CppObject*";
+
+		// === СТРУКТУРЫ (Value Types) ===
+		// Хранятся "inline", то есть само тело структуры лежит внутри класса.
+	case IL2CPP_TYPE_VALUETYPE:
+	{
+		Il2CppClass* klass = il2cpp_class_from_type(type);
+		if (klass) {
+			std::string safeName = SanitizeName(il2cpp_class_get_name(klass));
+			std::string ns = SanitizeName(il2cpp_class_get_namespace(klass));
+			if (!ns.empty()) safeName = ns + "_" + safeName;
+
+			// В Il2Cpp "размер класса" включает заголовок объекта (0x10 байт: vtable + monitor),
+			// даже для структур (в их boxed виде).
+			// Но когда структура лежит в поле, заголовка нет.
+			uint32_t boxedSize = CalculateClassSize(klass);
+
+			// Вычитаем заголовок, чтобы получить реальный размер данных
+			if (boxedSize > 0x10)
+				outSize = boxedSize - 0x10;
+			else
+				outSize = 1; // Пустая структура не может быть 0 байт в C++
+
+			// Возвращаем имя БЕЗ звездочки
+			return "struct " + safeName;
+		}
+		return "void*"; // Fallback
+	}
+
+	// === КЛАССЫ и МАССИВЫ (Reference Types) ===
+	// Всегда являются указателями (8 байт)
+	case IL2CPP_TYPE_CLASS:
+	case IL2CPP_TYPE_SZARRAY:
+	case IL2CPP_TYPE_ARRAY:
+	case IL2CPP_TYPE_GENERICINST: // Обычно GenericInst - это класс, но бывает и struct.
+		// Для простоты дампера часто считают указателем, 
+		// если не хотим лезть в дебри проверки IsValueType для generic.
+	{
+		Il2CppClass* klass = il2cpp_class_from_type(type);
+		if (klass) {
+			std::string safeName = SanitizeName(il2cpp_class_get_name(klass));
+			std::string ns = SanitizeName(il2cpp_class_get_namespace(klass));
+			if (!ns.empty()) safeName = ns + "_" + safeName;
+
+			// Возвращаем указатель
+			return "struct " + safeName + "*";
+		}
+		return "void*";
+	}
+
+	case IL2CPP_TYPE_PTR: return "void*";
+
+	default: return "void*";
+	}
+}
+
+void CollectClasses(std::vector<Il2CppClass*>& allClasses) {
+	int32_t i = 0;
+	__try {
+		Log("Collecting classes for struct dump...\n");
+		for (;; ++i) {
+			Il2CppClass* cls = MetadataCache__GetTypeInfoFromTypeDefinitionIndex(i);
+			if (!cls) break;
+			allClasses.push_back(cls);
+		}
+	}
+	__except (EXCEPTION_EXECUTE_HANDLER) {
+		Log("Exception occurred while dumping class at index %d\n", i);
+	}
+}
+
+void DumpStructs() {
+	fopen_s(&g_structs_file, "structs.h", "w");
+	if (!g_structs_file) return;
+
+	fprintf(g_structs_file, "// Generated by GIRuntimeDumper\n");
+	fprintf(g_structs_file, "#pragma once\n\n");
+	fprintf(g_structs_file, "#include <cstdint>\n\n");
+
+	// Standard Il2Cpp Types
+	fprintf(g_structs_file, "struct Il2CppString { struct Il2CppObject* obj; int32_t length; char chars[1]; };\n\n");
+
+	std::vector<Il2CppClass*> allClasses;
+
+	// 1. Collect all classes
+	CollectClasses(allClasses);
+
+	// 2. Forward Declarations (Typedefs)
+	// This allows struct A to have a field of type struct B* even if B is defined later.
+	Log("Writing forward declarations...\n");
+	for (Il2CppClass* cls : allClasses) {
+		std::string name = il2cpp_class_get_name(cls);
+		std::string ns = il2cpp_class_get_namespace(cls);
+		std::string fullName = SanitizeName(ns.empty() ? name : ns + "_" + name);
+
+		fprintf(g_structs_file, "typedef struct %s %s;\n", fullName.c_str(), fullName.c_str());
+	}
+	fprintf(g_structs_file, "\n");
+
+	// 3. Definitions
+	Log("Writing struct definitions...\n");
+	for (Il2CppClass* cls : allClasses) {
+		std::string name = il2cpp_class_get_name(cls);
+		std::string ns = il2cpp_class_get_namespace(cls);
+		std::string fullName = SanitizeName(ns.empty() ? name : ns + "_" + name);
+
+		// Resolve Parent
+		std::string parentName = "Il2CppObject"; // Default root
+		Il2CppClass* parentClass = Il2CppClassGetParent(cls);
+		if (parentClass) {
+			std::string pName = il2cpp_class_get_name(parentClass);
+			std::string pNs = il2cpp_class_get_namespace(parentClass);
+			parentName = SanitizeName(pNs.empty() ? pName : pNs + "_" + pName);
+		}
+
+		if (parentName.compare("System_Enum") == 0) {
+			// 1. Find the backing field (instance field) to determine type (int, byte, etc.)
+			void* iter = nullptr;
+			FieldInfo* valueField = nullptr;
+			int enumCount = 0;
+			while (FieldInfo* f = il2cpp_class_get_fields(cls, &iter)) {
+				if (!f) break;
+				if (strcmp(il2cpp_field_get_name(f), "value__") == 0) valueField = f;
+				else ++enumCount;
+			}
+
+			if (!valueField) continue;
+
+			uint32_t typeSize = 0;
+			std::string backingType = GetCTypeAndSize(il2cpp_field_get_type(valueField), typeSize);
+			
+			uint8_t typeEnum = Il2CppTypeGetType(il2cpp_field_get_type(valueField));
+
+			fprintf(g_structs_file, "// Namespace: %s\n", ns.c_str());
+			fprintf(g_structs_file, "enum class %s : %s {\n", fullName.c_str(), backingType.c_str());
+
+			iter = nullptr;
+			int index = 0;
+			while (FieldInfo* f = il2cpp_class_get_fields(cls, &iter)) {
+				if (!f) break;
+				if (f == valueField) continue;
+
+				fprintf(g_structs_file, "    %s = ", il2cpp_field_get_name(f));
+
+				uint64_t raw = il2cpp__vm__GetEnumFieldValue(cls, f);
+				switch (typeEnum) {
+				case IL2CPP_TYPE_I1:
+					fprintf(g_structs_file, "%d", (int8_t)raw);
+					break;
+				case IL2CPP_TYPE_U1:
+					fprintf(g_structs_file, "%u", (uint8_t)raw);
+					break;
+				case IL2CPP_TYPE_I2:
+					fprintf(g_structs_file, "%d", (int16_t)raw);
+					break;
+				case IL2CPP_TYPE_U2:
+					fprintf(g_structs_file, "%u", (uint16_t)raw);
+					break;
+				case IL2CPP_TYPE_I4:
+					fprintf(g_structs_file, "%d", (int32_t)raw);
+					break;
+				case IL2CPP_TYPE_U4:
+					fprintf(g_structs_file, "%u", (uint32_t)raw);
+					break;
+				case IL2CPP_TYPE_I8:
+					fprintf(g_structs_file, "%lld", (int64_t)raw);
+					break;
+				case IL2CPP_TYPE_U8:
+					fprintf(g_structs_file, "%llu", (uint64_t)raw);
+					break;
+				default:
+					// unreachable
+					break;
+				}
+
+				if (++index < enumCount)
+					fprintf(g_structs_file, ",\n");
+			}
+
+			fprintf(g_structs_file, "\n};\n\n");
+			continue;
+		}
+		else {
+			fprintf(g_structs_file, "// Namespace: %s\n", ns.c_str());
+			fprintf(g_structs_file, "struct %s : %s {\n", fullName.c_str(), parentName.c_str());
+
+			// Process Fields
+			void* iter = nullptr;
+			std::vector<FieldInfo*> fields;
+			while (FieldInfo* f = il2cpp_class_get_fields(cls, &iter)) {
+				fields.push_back(f);
+			}
+
+			for (FieldInfo* field : fields) {
+				int32_t offset = il2cpp_field_get_offset(field);
+				int flags = il2cpp_field_get_flags(field);
+
+				// Skip static fields for the struct layout (they are global memory, not instance)
+				if (flags & FIELD_ATTRIBUTE_STATIC) continue;
+
+				std::string fName = il2cpp_field_get_name(field);
+
+				// Handle auto-property backing field
+				std::replace(fName.begin(), fName.end(), '<', '_');
+				std::replace(fName.begin(), fName.end(), '>', '_');
+
+				uint32_t typeSize = 0;
+				std::string typeStr = GetCTypeAndSize(il2cpp_field_get_type(field), typeSize);
+
+				fprintf(g_structs_file, "    %s %s; // 0x%X\n", typeStr.c_str(), fName.c_str(), offset);
+			}
+		}
+
+		fprintf(g_structs_file, "};\n\n");
+	}
+
+	fclose(g_structs_file);
+	g_structs_file = nullptr;
+	printf("Struct dump completed: structs.h\n");
+}
 
 std::string GetTypeName(Il2CppType* type, int format = 0)
 {
@@ -193,13 +527,10 @@ void DumpClassInfo(int32_t type_def_index, Il2CppClass* classPtr) {
 	Log("// TypeDefIndex: %d\n", type_def_index);
 
 	std::stringstream outPut;
-	uint32_t parentToken = *(uint32_t*)((uintptr_t)classPtr + 0xA4); // 41 8B 87 ? ? ? ? 41 BF 00 00 00 00
-	if (parentToken != 0) {
-		Il2CppClass* parentClass = (Il2CppClass*)(**(uintptr_t**)(g_base + METADATA_BASE_POINTER) + parentToken); // metadata_base_pointer
-		if (parentClass) {
-			std::string parentClassName = il2cpp_class_get_name(parentClass);
-			Log("// Namespace: %s\nclass %s : %s\n{\n\t// Fields \n\n", namespaceName.c_str(), className.c_str(), parentClassName.c_str());
-		}
+	Il2CppClass* parent = Il2CppClassGetParent(classPtr);
+	if (parent) {
+		std::string parentName = il2cpp_class_get_name(parent);
+		Log("// Namespace: %s\nclass %s : %s\n{\n\t// Fields \n\n", namespaceName.c_str(), className.c_str(), parentName.c_str());
 	}
 	else {
 		Log("// Namespace: %s\nclass %s \n{\n\t// Fields \n\n", namespaceName.c_str(), className.c_str());
@@ -259,9 +590,9 @@ void DumpClassInfo(int32_t type_def_index, Il2CppClass* classPtr) {
 	while (MethodInfo* method = il2cpp_class_get_methods(classPtr, &methodIter)) {
 		//Log("5\n");
 
-		uint8_t paramCount = *(uint8_t*)((uintptr_t)method + 0x2E);
-		int16_t slot = *(int16_t*)((uintptr_t)method + 0x28); // 48 C7 40 ? 00 00 00 00 ? ? ? 66 C7 40
-		uint16_t flags = *(uint16_t*)((uintptr_t)method + 0x2A);
+		uint8_t paramCount = MethodGetParamCount(method);
+		int16_t slot = MethodGetSlot(method);
+		uint16_t flags = MethodGetFlags(method);
 
 		//Log("6\n");
 
@@ -351,22 +682,10 @@ void DumpClassInfo(int32_t type_def_index, Il2CppClass* classPtr) {
 			paramList.c_str(),
 			flags,
 			slotStr.c_str(),
-			(*(uintptr_t*)((uintptr_t)method + 0x8)) - g_base); // probably 48 83 78 ? 00 74 ? 48 83 C4 ? 5E 5D
+			MethodGetMethodPointer(method) - g_base);
 	}
 
 	Log("}\n\n");
-}
-
-void DisableLogReport()
-{
-	wchar_t filename[MAX_PATH] = {};
-	GetModuleFileName(NULL, filename, MAX_PATH);
-
-	auto path = std::filesystem::path(filename);
-	path = path.parent_path() / (path.stem().string() + "_Data") / "Plugins";
-
-	CreateFileW((path / "Astrolabe.dll").c_str(), GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-	CreateFileW((path / "MiHoYoMTRSDK.dll").c_str(), GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 }
 
 void Il2CppDump() {
@@ -383,23 +702,6 @@ void Il2CppDump() {
 	}
 }
 
-// === Packet Blocker Hooks ===
-bool InitBlockingHooks() {
-	if (MH_Initialize() != MH_OK) {
-		Log("MinHook init failed!\n");
-		return 0;
-	}
-
-	MH_CreateHookApi(L"ws2_32", "send", h_send, (LPVOID*)&o_send);
-	MH_CreateHookApi(L"ws2_32", "WSASend", h_WSASend, (LPVOID*)&o_WSASend);
-	MH_CreateHookApi(L"ws2_32", "connect", h_connect, (LPVOID*)&o_connect);
-
-	MH_EnableHook(MH_ALL_HOOKS);
-
-	return 1;
-}
-
-// Thread entry: initialize console, open dump file, resolve function ptrs, hook
 DWORD WINAPI StartThread(LPVOID)
 {
 	AllocConsole();
@@ -467,6 +769,9 @@ DWORD WINAPI StartThread(LPVOID)
 	// E8 ? ? ? ? 0F B7 A8
 	MetadataCache__GetTypeInfoFromTypeDefinitionIndex = (decltype(MetadataCache__GetTypeInfoFromTypeDefinitionIndex))(g_base + 0x452110);
 
+	// direct: 41 56 56 57 53 48 83 EC ? 48 89 D7 49 89 CE 48 8B 42 ? 48 BA
+	il2cpp__vm__GetEnumFieldValue = (decltype(il2cpp__vm__GetEnumFieldValue))(g_base + 0x44F970);
+
 	std::thread blockPacketsThread(([]() { Sleep(10000); g_blockPackets = false; }));
 	blockPacketsThread.detach();
 
@@ -477,7 +782,9 @@ DWORD WINAPI StartThread(LPVOID)
 
 	Sleep(15000);
 	printf("Starting dump\n");
-	Il2CppDump();
+
+	//Il2CppDump();
+	DumpStructs();
 
 	return 0;
 }

@@ -68,5 +68,8 @@
     <ClInclude Include="il2cpp_types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="dump.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

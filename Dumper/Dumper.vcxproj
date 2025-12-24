@@ -148,6 +148,7 @@
     <ClCompile Include="logger.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="dump.h" />
     <ClInclude Include="il2cpp_types.h" />
     <ClInclude Include="lib\minhook\include\MinHook.h" />
     <ClInclude Include="lib\minhook\src\buffer.h" />
