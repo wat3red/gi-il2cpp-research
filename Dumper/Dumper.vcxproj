@@ -140,15 +140,21 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="hooks.cpp" />
+    <ClCompile Include="il2cpp_bridge.cpp" />
     <ClCompile Include="lib\minhook\src\buffer.c" />
     <ClCompile Include="lib\minhook\src\hde\hde32.c" />
     <ClCompile Include="lib\minhook\src\hde\hde64.c" />
     <ClCompile Include="lib\minhook\src\hook.c" />
     <ClCompile Include="lib\minhook\src\trampoline.c" />
-    <ClCompile Include="logger.cpp" />
+    <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="dump.h" />
+    <ClInclude Include="common.h" />
+    <ClCompile Include="dumper.cpp" />
+    <ClInclude Include="dumper.h" />
+    <ClInclude Include="hooks.h" />
+    <ClInclude Include="il2cpp_bridge.h" />
     <ClInclude Include="il2cpp_types.h" />
     <ClInclude Include="lib\minhook\include\MinHook.h" />
     <ClInclude Include="lib\minhook\src\buffer.h" />
@@ -158,7 +164,7 @@
     <ClInclude Include="lib\minhook\src\hde\table32.h" />
     <ClInclude Include="lib\minhook\src\hde\table64.h" />
     <ClInclude Include="lib\minhook\src\trampoline.h" />
-    <ClInclude Include="logger.h" />
+    <ClInclude Include="utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
