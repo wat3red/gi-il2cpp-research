@@ -11,7 +11,6 @@ namespace Utils {
 
     // String manipulation
     std::string StripNamespaces(const std::string& full);
-    std::string SanitizeName(std::string name);
 
     // Logging wrapper
     template<typename... Args>

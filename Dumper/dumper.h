@@ -9,4 +9,6 @@ namespace Dumper {
 
     // Dumps detailed info about all classes to log/console
     void DumpFull();
+
+    void DumpForIDA();
 }

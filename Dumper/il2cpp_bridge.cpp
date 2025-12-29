@@ -26,6 +26,7 @@ namespace Il2Cpp {
 
     void (*type_get_name_tmp)(void* out_str_struct, Il2CppType* type, int format) = nullptr;
     void (*free_temp_str)(void* out_str_struct) = nullptr;
+    Il2CppClass* (*type_get_class_or_element_class)(Il2CppType* type) = nullptr;
 
     Il2CppClass* (*MetadataCache__GetTypeInfoFromTypeDefinitionIndex)(int32_t typeDefinitionIndex) = nullptr;
     uint64_t(*vm__GetEnumFieldValue)(Il2CppClass* enumType, FieldInfo* field) = nullptr;
@@ -66,6 +67,8 @@ namespace Il2Cpp {
         type_get_name_tmp = (decltype(type_get_name_tmp))(b + 0x45C620);
         // E8 ? ? ? ? B3 ? E9 ? ? ? ? 4C 8B B6
         free_temp_str = (decltype(free_temp_str))(b + 0x8DFF80);
+        // 0F BE 41 ? 83 F8 ? 74
+        type_get_class_or_element_class = (decltype(type_get_class_or_element_class))(b + 0x3E8380); // Return class if type is not an array. Return element type if it is an array.
         // E8 ? ? ? ? 0F B7 A8
         MetadataCache__GetTypeInfoFromTypeDefinitionIndex = (decltype(MetadataCache__GetTypeInfoFromTypeDefinitionIndex))(b + 0x452110);
         // direct: 41 56 56 57 53 48 83 EC ? 48 89 D7 49 89 CE 48 8B 42 ? 48 BA
@@ -89,6 +92,31 @@ namespace Il2Cpp {
         return (Il2CppClass*)(**(uintptr_t**)(Config::GameBase + METADATA_BASE_POINTER) + parentToken);
 #undef METADATA_BASE_POINTER
     }
+
+    Il2CppGenericClass* GetClassGenericClass(Il2CppClass* klass) {
+        // 49 83 BF ? ? ? ? 00 0F 85 ? ? ? ? 48 89 75
+        // if ((*(_BYTE*)(delegateType + 0xCA) & 1) != 0 || *(_QWORD*)(delegateType + 0x88))
+        return *(Il2CppGenericClass**)((uintptr_t)klass + 0x88);
+    }
+
+    Il2CppGenericContext* GetGenericContext(Il2CppGenericClass* genericClass)
+    {
+        // In InitLocked 
+        // 48 83 45 ? ? 31 F6
+        return (Il2CppGenericContext*)(genericClass + 0x8);
+    }
+
+    Il2CppGenericInst* GenericContextGetClassInst(Il2CppGenericContext* genericContext)
+    {
+        // In Object::Box
+        // E8 ? ? ? ? 48 89 C7 F6 80 ? ? ? ? ? 75 ? 48 8D 05 ? ? ? ? 48 89 45 ? 48 8B 0D ? ? ? ? FF 15 ? ? ? ? 48 8D 55 ? 48 89 F9 E8 ? ? ? ? 48 8B 45 ? ? ? ? FF 15 ? ? ? ? 0F B7 87
+        return *(Il2CppGenericInst**)(genericContext);
+    }
+
+    Il2CppType* GetClassType(Il2CppClass* klass) {
+        // 48 83 C6 ? 48 8D 7D ? 48 89 F9
+        return (Il2CppType*)((uintptr_t)klass + 0x70);
+	}
 
     uint8_t GetMethodParamCount(MethodInfo* method) {
         return *(uint8_t*)((uintptr_t)method + 0x2E);

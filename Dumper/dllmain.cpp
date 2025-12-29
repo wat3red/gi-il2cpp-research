@@ -34,7 +34,9 @@ DWORD WINAPI StartThread(LPVOID) {
 
     // Choose what to dump here
     // Dumper::DumpFull();
-    Dumper::GenerateSDK();
+    //Dumper::GenerateSDK();
+    Dumper::DumpForIDA();
+    
 
     return 0;
 }
