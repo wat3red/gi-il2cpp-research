@@ -103,7 +103,7 @@ namespace Il2Cpp {
     {
         // In InitLocked 
         // 48 83 45 ? ? 31 F6
-        return (Il2CppGenericContext*)(genericClass + 0x8);
+        return (Il2CppGenericContext*)((uintptr_t)genericClass + 0x8);
     }
 
     Il2CppGenericInst* GenericContextGetClassInst(Il2CppGenericContext* genericContext)

@@ -147,6 +147,7 @@
     <ClCompile Include="lib\minhook\src\hde\hde64.c" />
     <ClCompile Include="lib\minhook\src\hook.c" />
     <ClCompile Include="lib\minhook\src\trampoline.c" />
+    <ClCompile Include="test_tu.cpp" />
     <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -154,6 +155,7 @@
     <ClCompile Include="dumper.cpp" />
     <ClInclude Include="dumper.h" />
     <ClInclude Include="hooks.h" />
+    <ClInclude Include="ida.h" />
     <ClInclude Include="il2cpp_bridge.h" />
     <ClInclude Include="il2cpp_types.h" />
     <ClInclude Include="lib\minhook\include\MinHook.h" />

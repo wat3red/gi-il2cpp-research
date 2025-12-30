@@ -45,6 +45,9 @@
     <ClCompile Include="dumper.cpp">
       <Filter>Header Files</Filter>
     </ClCompile>
+    <ClCompile Include="test_tu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="lib\minhook\include\MinHook.h">
@@ -87,6 +90,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="il2cpp_bridge.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ida.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
