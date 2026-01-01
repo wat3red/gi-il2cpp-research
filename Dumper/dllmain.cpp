@@ -33,11 +33,10 @@ DWORD WINAPI StartThread(LPVOID) {
     Utils::Log("Starting dump...\n");
 
     // Choose what to dump here
-    // Dumper::DumpFull();
-    //Dumper::GenerateSDK();
-    Dumper::DumpForIDA();
+    //Dumper::DumpFull();
+    Dumper::GenerateSDK();
+    //Dumper::DumpForIDA();
     
-
     return 0;
 }
 

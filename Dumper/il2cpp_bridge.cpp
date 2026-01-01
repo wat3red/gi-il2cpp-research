@@ -82,7 +82,7 @@ namespace Il2Cpp {
 
     uint32_t GetClassSize(Il2CppClass* klass) {
         // 0F B7 9F ? ? ? ? 48 89 F9
-        return *(int16_t*)((uintptr_t)klass + 0xB4) - 4;
+        return (uint32_t)((*(int16_t*)((uintptr_t)klass + 0xB4)) - 4);
     }
 
     Il2CppClass* GetClassParent(Il2CppClass* klass) {
@@ -133,6 +133,7 @@ namespace Il2Cpp {
 
     uintptr_t GetMethodPointer(MethodInfo* method) {
         // 48 83 78 ? 00 74 ? 48 83 C4 ? 5E 5D
+        // i think this is better: FF 50 ? 48 8B 4C 24 ? 48 89 FA
         return *(uintptr_t*)((uintptr_t)method + 0x8);
     }
 
