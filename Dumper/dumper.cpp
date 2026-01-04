@@ -8,13 +8,10 @@
 
 namespace Dumper {
 	static const std::unordered_set<std::string> g_Keywords = {
-		// C
 		"auto","break","bool","case","char","const","continue","default","do","double",
 		"else","enum","extern","float","for","goto","if","inline","int","long",
 		"register","restrict","return","short","signed","sizeof","static","struct",
-		"switch","typedef","union","unsigned","void","volatile","while",
-
-		// C++
+		"switch","typedef","union","unsigned","void","volatile","while","xor","not","and","or",
 		"class","public","private","protected","template","typename","using",
 		"namespace","operator","new","delete","this","virtual","override","final",
 		"try","catch","throw","nullptr","true","false",
@@ -22,7 +19,9 @@ namespace Dumper {
 		// MSVC / IDA sensitive
 		"__int8","__int16","__int32","__int64",
 		"__fastcall","__stdcall","__thiscall","__cdecl",
-		"__cppobj", "_int8","_int16","_int32","_int64",
+		"__cppobj", "_int8","_int16","_int32","_int64","__callback","__except","__try",
+
+		"Call" // protecting our macro
 	};
 
 	std::string SanitizeType(const std::string& in)
@@ -67,16 +66,22 @@ namespace Dumper {
 		std::set<Il2CppClass*> uniqueSet(allClasses.begin(), allClasses.end());
 		size_t scanIndex = 0;
 
-		// Scan indefinitely until we stop finding new classes
 		while (scanIndex < allClasses.size()) {
 			Il2CppClass* cls = allClasses[scanIndex];
 			scanIndex++;
 
 			if (!cls) continue;
 
-			// Check if this field points to a class we haven't dumped yet
-			// If it's a valid class and we haven't seen it, add it
+			// If this class is an Open Generic (e.g., List<T>), its methods use generic
+			// placeholders (VAR) which we cannot resolve to concrete classes.
+			// We only want to scan inflated instances (e.g., List<int>).
+			if (Il2Cpp::GetClassGenericContainerIndex(cls)) continue;
 
+			// if (cls->genericContainerIndex) continue;
+			// v16 = *(__int16*)(*(_QWORD*)(v46 + 0x90) + 0x36LL) ^ 0xFFFF8DC0;
+			if (*(int16_t*)((uintptr_t)cls + 0x36) ^ 0xFFFF8DC0) continue;
+
+			// 1. Scan Fields (Your existing logic is generally safe here)
 			void* iter = nullptr;
 			while (FieldInfo* field = Il2Cpp::class_get_fields(cls, &iter)) {
 				Il2CppType* fType = Il2Cpp::field_get_type(field);
@@ -87,7 +92,6 @@ namespace Dumper {
 					fType->type == IL2CPP_TYPE_CLASS) {
 
 					Il2CppClass* targetClass = Il2Cpp::class_from_type(fType);
-
 					if (targetClass && uniqueSet.find(targetClass) == uniqueSet.end()) {
 						uniqueSet.insert(targetClass);
 						allClasses.push_back(targetClass);
@@ -95,56 +99,59 @@ namespace Dumper {
 				}
 			}
 
+			// 2. Scan Parent (Existing logic)
 			Il2CppClass* parentClass = Il2Cpp::GetClassParent(cls);
-			if (parentClass) {
-				Il2CppType* parentType = Il2Cpp::GetClassType(parentClass);
-				
-				if (parentType &&
-					(parentType->type == IL2CPP_TYPE_GENERICINST ||
-						parentType->type == IL2CPP_TYPE_VALUETYPE ||
-						parentType->type == IL2CPP_TYPE_CLASS)) {
-					if (parentClass && uniqueSet.find(parentClass) == uniqueSet.end()) {
-						uniqueSet.insert(parentClass);
-						allClasses.push_back(parentClass);
-					}
-				}
+			if (parentClass && uniqueSet.find(parentClass) == uniqueSet.end()) {
+				// Logic to check parent type properties if needed
+				// Usually adding the parent class directly is safe and desirable
+				uniqueSet.insert(parentClass);
+				allClasses.push_back(parentClass);
 			}
 
+			// 3. Scan Methods (The Crash Fix)
 			iter = nullptr;
-			while (MethodInfo* method = Il2Cpp::class_get_methods(cls, &iter))
-			{
-				if (!method) break;
+			while (MethodInfo* method = Il2Cpp::class_get_methods(cls, &iter)) {
 
-				// this block is crashing for some reason
+				// --- SAFEGUARD 2: Skip Generic Method Definitions ---
+				// If the method itself is generic (e.g. "T GetComponent<T>()"),
+				// we cannot resolve T. Skip it.
+				if (Il2Cpp::GetMethodIsGenric(method)) continue;
+
+				// Check Return Type
 				Il2CppType* retType = Il2Cpp::method_get_return_type(method);
-				if (retType) {
+				if (retType && (retType->type == IL2CPP_TYPE_GENERICINST ||
+					retType->type == IL2CPP_TYPE_VALUETYPE ||
+					retType->type == IL2CPP_TYPE_CLASS)) {
+
+					// Safety check for generic instance data
+					if (retType->type == IL2CPP_TYPE_GENERICINST && !retType->data.generic_class) continue;
+
 					Il2CppClass* retClass = Il2Cpp::class_from_type(retType);
-					if (retType &&
-						(retType->type == IL2CPP_TYPE_GENERICINST ||
-							retType->type == IL2CPP_TYPE_VALUETYPE ||
-							retType->type == IL2CPP_TYPE_CLASS)) {
-						if (retClass && uniqueSet.find(retClass) == uniqueSet.end()) {
-							uniqueSet.insert(retClass);
-							allClasses.push_back(retClass);
+					if (retClass && uniqueSet.find(retClass) == uniqueSet.end()) {
+						uniqueSet.insert(retClass);
+						allClasses.push_back(retClass);
+					}
+				}
+
+				// Check Parameters
+				uint32_t paramCount = Il2Cpp::GetMethodParamCount(method);
+				for (uint32_t i = 0; i < paramCount; i++) {
+					Il2CppType* paramType = Il2Cpp::method_get_param(method, i);
+
+					if (paramType &&
+						(paramType->type == IL2CPP_TYPE_GENERICINST ||
+							paramType->type == IL2CPP_TYPE_VALUETYPE ||
+							paramType->type == IL2CPP_TYPE_CLASS)) {
+
+						if (paramType->type == IL2CPP_TYPE_GENERICINST && !paramType->data.generic_class) continue;
+
+						Il2CppClass* paramClass = Il2Cpp::class_from_type(paramType);
+						if (paramClass && uniqueSet.find(paramClass) == uniqueSet.end()) {
+							uniqueSet.insert(paramClass);
+							allClasses.push_back(paramClass);
 						}
 					}
 				}
-
-//				uint32_t paramCount = Il2Cpp::GetMethodParamCount(method);
-//				for (uint32_t i = 0; i < paramCount; i++) {
-//					Il2CppType* paramType = Il2Cpp::method_get_param(method, i);
-//
-//					Il2CppClass* paramClass = Il2Cpp::class_from_type(paramType);
-//					if (paramType &&
-//						(paramType->type == IL2CPP_TYPE_GENERICINST ||
-//							paramType->type == IL2CPP_TYPE_VALUETYPE ||
-//							paramType->type == IL2CPP_TYPE_CLASS)) {
-//						if (paramClass && uniqueSet.find(paramClass) == uniqueSet.end()) {
-//							uniqueSet.insert(paramClass);
-//							allClasses.push_back(paramClass);
-//						}
-//					}
-//				}
 			}
 		}
 	}
@@ -152,7 +159,6 @@ namespace Dumper {
 	std::string GetIl2CppClassName(Il2CppClass* cls);
 	std::string GetCType(Il2CppType* type);
 
-	// Generates the "ideal" name, but does not check for collisions yet
 	std::string GenerateRawClassName(Il2CppClass* cls) {
 		if (!cls) return "void";
 
@@ -175,12 +181,9 @@ namespace Dumper {
 					for (uint32_t i = 0; i < inst->type_argc; i++) {
 						const Il2CppType* t = inst->type_argv[i];
 
-						// RECURSION FIX: Get the unique name of the argument!
-						// If the arg has a collision (e.g., Class_1), this name adapts automatically.
 						Il2CppClass* argClass = Il2Cpp::class_from_type((Il2CppType*)t);
 						std::string argName = argClass ? GetIl2CppClassName(argClass) : GetCType((Il2CppType*)t);
 
-						// Clean up the name for usage in a C++ identifier
 						argName = SanitizeType(argName);
 						fullName += "_" + argName;
 					}
@@ -190,12 +193,12 @@ namespace Dumper {
 		return SanitizeType(fullName);
 	}
 
-	// Map strict pointer -> Unique Name
-	static std::unordered_map<Il2CppClass*, std::string> g_ClassNames;
-	// Set of names already taken to detect collisions
-	static std::unordered_set<std::string> g_TakenNames;
-
 	std::string GetIl2CppClassName(Il2CppClass* cls) {
+		// Map strict pointer -> Unique Name
+		static std::unordered_map<Il2CppClass*, std::string> g_ClassNames;
+		// Set of names already taken to detect collisions
+		static std::unordered_set<std::string> g_TakenNames;
+
 		if (!cls) return "void";
 
 		// 1. Check Cache: Have we already named this specific pointer?
@@ -206,6 +209,8 @@ namespace Dumper {
 
 		// 2. Generate Base Name
 		std::string name = GenerateRawClassName(cls);
+
+		if (name.empty()) return "";
 
 		// 3. Collision Resolution
 		// If this exact string name is already used by a DIFFERENT pointer, suffix it.
@@ -322,7 +327,6 @@ namespace Dumper {
 		}
 	}
 
-
 	void SortClasses(std::vector<Il2CppClass*>& classes) {
 		std::vector<Il2CppClass*> sorted;
 		std::unordered_set<Il2CppClass*> visited;
@@ -335,21 +339,25 @@ namespace Dumper {
 			// If null or already visited, skip
 			if (!cls || visited.count(cls)) return;
 
+			if (Il2Cpp::GetClassType(cls)->type == IL2CPP_TYPE_VAR ||
+				Il2Cpp::GetClassType(cls)->type == IL2CPP_TYPE_PTR ||
+				Il2Cpp::GetClassType(cls)->type == IL2CPP_TYPE_MVAR) return;
+
 			// Mark visited immediately to prevent infinite recursion (cycles)
 			visited.insert(cls);
 
-			// 1. Must define Parent first (Inheritance)
+			// Must define Parent first (Inheritance)
 			Il2CppClass* parent = Il2Cpp::GetClassParent(cls);
 			if (parent) visit(parent);
 
-			// 2. Must define ValueType fields first (Embedded structs)
+			// Must define ValueType fields first (Embedded structs)
 			// (Pointers don't matter, but structs do)
 			void* iter = nullptr;
 			while (FieldInfo* field = Il2Cpp::class_get_fields(cls, &iter)) {
 				Il2CppType* fType = Il2Cpp::field_get_type(field);
 				if (!fType) continue;
 
-				// Only strict dependency is VALUETYPE. 
+				// Only strict dependency is VALUETYPE. 
 				// CLASS/GENERICINST are usually pointers, so forward decl is enough.
 				if (fType->type == IL2CPP_TYPE_VALUETYPE) {
 					Il2CppClass* fieldClass = Il2Cpp::class_from_type(fType);
@@ -357,7 +365,33 @@ namespace Dumper {
 				}
 			}
 
-			// 3. Add self to list after dependencies are satisfied
+			if (!Il2Cpp::GetClassGenericContainerIndex(cls)) {
+				iter = nullptr;
+				while (MethodInfo* method = Il2Cpp::class_get_methods(cls, &iter))
+				{
+					if (Il2Cpp::GetMethodIsGenric(method)) continue;
+
+					// Helper to check and visit type
+					auto tryVisitType = [&](Il2CppType* t) {
+						if (!t) return;
+						if (t->type == IL2CPP_TYPE_VALUETYPE ||
+							t->type == IL2CPP_TYPE_GENERICINST) {
+
+							Il2CppClass* tClass = Il2Cpp::class_from_type(t);
+							if (tClass) visit(tClass);
+						}
+						};
+
+					tryVisitType(Il2Cpp::method_get_return_type(method));
+
+					uint32_t paramCount = Il2Cpp::GetMethodParamCount(method);
+					for (uint32_t i = 0; i < paramCount; i++) {
+						tryVisitType(Il2Cpp::method_get_param(method, i));
+					}
+				}
+			}
+
+			// Add self to list after dependencies are satisfied
 			sorted.push_back(cls);
 			};
 
@@ -435,7 +469,7 @@ struct Il2CppString { Il2CppObject* obj; int32_t length; char chars[1]; };)"""
 		Utils::Log("Writing forward declarations...\n");
 		for (Il2CppClass* cls : allClasses) {
 			std::string fullName = GetIl2CppClassName(cls);
-			if (!fullName.empty() && Il2Cpp::GetClassType(cls)->type != IL2CPP_TYPE_VALUETYPE)
+			if (!fullName.empty() && ((Il2Cpp::GetClassType(cls)->type == IL2CPP_TYPE_GENERICINST) || (Il2Cpp::GetClassType(cls)->type == IL2CPP_TYPE_CLASS)))
 				fprintf(hFile, "typedef struct %s %s;\n", fullName.c_str(), fullName.c_str());
 		}
 		fprintf(hFile, "\n");
@@ -585,18 +619,31 @@ struct Il2CppString { Il2CppObject* obj; int32_t length; char chars[1]; };)"""
 		std::string args = "";
 		uint32_t count = Il2Cpp::GetMethodParamCount(method);
 
+		uint32_t unnamedCount = 1;
+
 		for (uint32_t i = 0; i < count; i++) {
 			Il2CppType* paramType = Il2Cpp::method_get_param(method, i);
-			const char* paramName = Il2Cpp::method_get_param_name(method, i);
+			std::string paramName = Il2Cpp::method_get_param_name(method, i);
+
+			if (paramName.empty()) paramName = "unnamed_" + std::to_string(unnamedCount++);
 
 			std::string safeParamName = SanitizeIdentifier(paramName);
 			if (i > 0) args += ", ";
 
-			if (!onlyNames)
-				args += GetCType(paramType) + " " + safeParamName;
-			else
+			if (onlyNames)
 				args += safeParamName;
+			else
+				args += GetCType(paramType) + " " + safeParamName;
 		}
+
+		if (!args.empty())
+			args += ", ";
+
+		if (onlyNames)
+			args += "method_info";
+		else
+			args += "MethodInfo* method_info";
+
 		return args;
 	}
 
@@ -660,49 +707,65 @@ struct Il2CppString { Il2CppObject* obj; int32_t length; char chars[1]; };)"""
 		return size > 8;
 	}
 
-	void GenerateSDK() {
-		FILE* file;
-		fopen_s(&file, "sdk.h", "w");
-		if (!file) return;
+	std::string GetIl2CppMethodName(std::unordered_map<MethodInfo*, std::string>& methodNames, std::unordered_set<std::string>& takenNames, MethodInfo* method) {
+		auto it = methodNames.find(method);
+		if (it != methodNames.end()) {
+			return it->second;
+		}
 
-		fprintf(file,
+		std::string name = SanitizeIdentifier(Il2Cpp::method_get_name(method));
+
+		if (takenNames.count(name)) {
+			int id = 1;
+			std::string newName;
+			do {
+				newName = name + "_" + std::to_string(id);
+				id++;
+			} while (takenNames.count(newName));
+			name = newName;
+		}
+
+		takenNames.insert(name);
+		methodNames[method] = name;
+
+		return name;
+	}
+
+	void GenerateSDK() {
+		FILE* headerFile;
+		FILE* implFile;
+
+		fopen_s(&headerFile, "sdk.h", "w");
+		fopen_s(&implFile, "sdk.cpp", "w");
+
+		if (!headerFile || !implFile) {
+			if (headerFile) fclose(headerFile);
+			if (implFile) fclose(implFile);
+			return;
+		}
+
+		// --- Header File ---
+		fprintf(headerFile,
 			R"(#pragma once
 // Generated by GIRuntimeDumper
 #include <cstdint>
 
-// User must define this in their codebase!
 extern uintptr_t GameBase;
 
 struct Il2CppObject { void* klass; void* monitor; };
+struct MethodInfo;
+
 template <typename T>
 struct Il2CppArray : Il2CppObject {
-	void* bounds;
-	int   max_length;
-	T array[65535];
-
-	T& operator [] (int i)
-	{
-		return array[i];
-	}
-
-	const T& operator [] (int i) const
-	{
-		return array[i];
-	}
-
-	bool Contains(T item)
-	{
-		for (int i = 0; i < max_length; i++)
-		{
-			if (array[i] == item) return true;
-		}
-		return false;
-	}
+    void* bounds;
+    int   max_length;
+    T array[65535];
+    T& operator [] (int i) { return array[i]; }
+    const T& operator [] (int i) const { return array[i]; }
 };
 
 struct Il2CppString { Il2CppObject* obj; int32_t length; char chars[1]; };
 
-// --- SDK Helpers ---
 template<typename R, typename... Args>
 inline R Call(uintptr_t rva, void* instance, Args... args) {
     typedef R(*FuncType)(void*, Args...);
@@ -715,36 +778,49 @@ inline R CallStatic(uintptr_t rva, Args... args) {
     typedef R(*FuncType)(Args...);
     FuncType func = reinterpret_cast<FuncType>(GameBase + rva);
     return func(args...);
-})");
+}
+
+#pragma warning(push)
+#pragma warning(disable : 4674)
+)");
+
+		// --- Implementation File ---
+		fprintf(implFile,
+			R"(// Generated by GIRuntimeDumper
+#include "sdk.h"
+
+#pragma warning(push)
+#pragma warning(disable : 4674)
+)");
+
 		std::vector<Il2CppClass*> allClasses;
-
-		Utils::Log("Collecting classes for struct dump...\n");
+		Utils::Log("Collecting classes...\n");
 		CollectAllClasses(allClasses);
-
-		Utils::Log("Discovering inflated generic instances...\n");
 		CollectInflatedClasses(allClasses);
 
-		Utils::Log("Sorting classes by dependency...\n");
+		Utils::Log("Sorting classes...\n");
 		SortClasses(allClasses);
 
-		// Forward Declarations
+		// 1. Forward Declarations (Header)
 		Utils::Log("Writing forward declarations...\n");
 		for (Il2CppClass* cls : allClasses) {
 			std::string fullName = GetIl2CppClassName(cls);
 			if (!fullName.empty() && Il2Cpp::GetClassType(cls)->type != IL2CPP_TYPE_VALUETYPE)
-				fprintf(file, "typedef struct %s %s;\n", fullName.c_str(), fullName.c_str());
+				fprintf(headerFile, "typedef struct %s %s;\n", fullName.c_str(), fullName.c_str());
 		}
-		fprintf(file, "\n");
+		fprintf(headerFile, "\n");
 
-		bool firstMethod = true;
-		fprintf(file, "{\n  \"ImageBase\": %llu,\n  \"Methods\": [\n", Config::GameBase);
-
-		// Definitions
-		Utils::Log("Writing definitions...\n");
+		// ---------------------------------------------------------
+		// PASS 1: Struct Definitions with Method Declarations (Header)
+		// ---------------------------------------------------------
+		Utils::Log("Writing struct definitions to header...\n");
 
 		for (Il2CppClass* cls : allClasses) {
 			std::string name = Il2Cpp::class_get_name(cls);
 			std::string ns = Il2Cpp::class_get_namespace(cls);
+
+			if (name == "" && ns == "") continue;
+
 			std::string fullName = GetIl2CppClassName(cls);
 			if (fullName.empty()) continue;
 
@@ -753,21 +829,18 @@ inline R CallStatic(uintptr_t rva, Args... args) {
 			if (parentClass)
 				parentName = GetIl2CppClassName(parentClass);
 
-			// STRUCT HANDLING
-			void* iter = nullptr;
-			// Don't generate body for Enums (yet)
 			if (parentName == "System_Enum") continue;
+			if (fullName == "System_ValueType") parentName = "";
 
-			if (fullName == "System_ValueType")
-				parentName = "";
-
+			// Struct Header
 			if (parentName.empty())
-				fprintf(file, "// Namespace: %s\nstruct %s {\n", ns.c_str(), fullName.c_str());
+				fprintf(headerFile, "// Namespace: %s\nstruct %s {\n", ns.c_str(), fullName.c_str());
 			else
-				fprintf(file, "// Namespace: %s\nstruct %s : %s {\n", ns.c_str(), fullName.c_str(), parentName.c_str());
+				fprintf(headerFile, "// Namespace: %s\nstruct %s : %s {\n", ns.c_str(), fullName.c_str(), parentName.c_str());
 
-			fprintf(file, "    // Fields\n\n");
-
+			// Fields
+			fprintf(headerFile, "    // Fields\n");
+			void* iter = nullptr;
 			while (FieldInfo* field = Il2Cpp::class_get_fields(cls, &iter)) {
 				int flags = Il2Cpp::field_get_flags(field);
 				if (flags & FIELD_ATTRIBUTE_STATIC) continue;
@@ -776,102 +849,108 @@ inline R CallStatic(uintptr_t rva, Args... args) {
 				if (fName.empty()) continue;
 
 				std::string typeStr = GetCType(Il2Cpp::field_get_type(field));
-				// header isn't present in structs, so we need to handle it 
-				int32_t offset = Il2Cpp::field_get_offset(field) - ((parentName == "System_ValueType") ? sizeof(Il2CppObject*) : 0);
-
-				fprintf(file, "    %s %s; // 0x%X\n", typeStr.c_str(), fName.c_str(), offset);
+				int32_t offset = Il2Cpp::field_get_offset(field) - ((parentName == "System_ValueType") ? sizeof(Il2CppObject) : 0);
+				fprintf(headerFile, "    %s %s; // 0x%X\n", typeStr.c_str(), fName.c_str(), offset);
 			}
 
-			fprintf(file, "\n    // Methods\n\n");
+			std::unordered_map<MethodInfo*, std::string> methodNames;
+			std::unordered_set<std::string> takenNames;
 
+			// Method Declarations (Header)
+			fprintf(headerFile, "\n    // Methods\n");
 			iter = nullptr;
-			while (MethodInfo* method = Il2Cpp::class_get_methods(cls, &iter))
-			{
+			while (MethodInfo* method = Il2Cpp::class_get_methods(cls, &iter)) {
 				uintptr_t methodPtr = Il2Cpp::GetMethodPointer(method);
-				if (!methodPtr)
-					continue;
+				if (!methodPtr || !(methodPtr - Config::GameBase)) continue;
 
-				uintptr_t rva = methodPtr - Config::GameBase;
-				if (!rva)
-					continue;
+				std::string mName = GetIl2CppMethodName(methodNames, takenNames, method);
+				if (mName.empty()) continue;
 
-				std::string mName = SanitizeIdentifier(Il2Cpp::method_get_name(method));
 				uint16_t flags = Il2Cpp::GetMethodFlags(method);
 				bool isStatic = (flags & METHOD_ATTRIBUTE_STATIC);
-
-				Il2CppType* retIl2CppType = Il2Cpp::method_get_return_type(method);
-				std::string retType = GetCType(retIl2CppType);
-
-				std::string argsCall = GetMethodArgs(method, true);
+				std::string retType = GetCType(Il2Cpp::method_get_return_type(method));
 				std::string argsDecl = GetMethodArgs(method, false);
 
-				bool hasReturnBuffer = HasReturnBuffer(method);
-
-				fprintf(file,
-					"    %s%s %s(%s) {\n",
+				fprintf(headerFile, "    %s%s %s(%s);\n",
 					isStatic ? "static " : "",
 					retType.c_str(),
 					mName.c_str(),
 					argsDecl.c_str()
 				);
-
-				// return-buffer
-				if (hasReturnBuffer)
-				{
-					fprintf(file, "        %s __ret{};\n", retType.c_str());
-
-					if (isStatic)
-					{
-						fprintf(file,
-							"        CallStatic<void>(0x%llX, &__ret%s%s);\n",
-							rva,
-							argsCall.empty() ? "" : ", ",
-							argsCall.c_str()
-						);
-					}
-					else
-					{
-						fprintf(file,
-							"        Call<void>(0x%llX, &__ret, this%s%s);\n",
-							rva,
-							argsCall.empty() ? "" : ", ",
-							argsCall.c_str()
-						);
-					}
-
-					fprintf(file, "        return __ret;\n");
-				}
-				else
-				{
-					if (isStatic)
-					{
-						fprintf(file,
-							"        return CallStatic<%s>(0x%llX%s%s);\n",
-							retType.c_str(),
-							rva,
-							argsCall.empty() ? "" : ", ",
-							argsCall.c_str()
-						);
-					}
-					else
-					{
-						fprintf(file,
-							"        return Call<%s>(0x%llX, this%s%s);\n",
-							retType.c_str(),
-							rva,
-							argsCall.empty() ? "" : ", ",
-							argsCall.c_str()
-						);
-					}
-				}
-
-				fprintf(file, "    }\n");
 			}
 
-			fprintf(file, "};\n\n");
+			fprintf(headerFile, "};\n\n");
 		}
 
-		fclose(file);
-		Utils::Log("SDK generation completed!\n");
+		fprintf(headerFile, "#pragma warning(pop)\n");
+
+		// ---------------------------------------------------------
+		// PASS 2: Method Implementations (CPP File)
+		// ---------------------------------------------------------
+		Utils::Log("Writing method implementations to cpp...\n");
+
+		for (Il2CppClass* cls : allClasses) {
+			std::string fullName = GetIl2CppClassName(cls);
+			if (fullName.empty()) continue;
+
+			std::string parentName = "";
+			Il2CppClass* parentClass = Il2Cpp::GetClassParent(cls);
+			if (parentClass) parentName = GetIl2CppClassName(parentClass);
+			if (parentName == "System_Enum") continue;
+
+			std::unordered_map<MethodInfo*, std::string> methodNames;
+			std::unordered_set<std::string> takenNames;
+
+			void* iter = nullptr;
+			while (MethodInfo* method = Il2Cpp::class_get_methods(cls, &iter)) {
+				uintptr_t methodPtr = Il2Cpp::GetMethodPointer(method);
+				if (!methodPtr) continue;
+				uintptr_t rva = methodPtr - Config::GameBase;
+				if (!rva) continue;
+
+				std::string mName = GetIl2CppMethodName(methodNames, takenNames, method);
+				if (mName.empty()) continue;
+
+				uint16_t flags = Il2Cpp::GetMethodFlags(method);
+				bool isStatic = (flags & METHOD_ATTRIBUTE_STATIC);
+				Il2CppType* retIl2CppType = Il2Cpp::method_get_return_type(method);
+				std::string retType = GetCType(retIl2CppType);
+				std::string argsCall = GetMethodArgs(method, true);
+				std::string argsDecl = GetMethodArgs(method, false);
+				bool hasReturnBuffer = HasReturnBuffer(method);
+
+				// Method Definition
+				fprintf(implFile, "%s %s::%s(%s) {\n",
+					retType.c_str(),
+					fullName.c_str(),
+					mName.c_str(),
+					argsDecl.c_str()
+				);
+
+				// Body
+				if (hasReturnBuffer) {
+					fprintf(implFile, "    %s __ret{};\n", retType.c_str());
+					if (isStatic)
+						fprintf(implFile, "    CallStatic<void>(0x%llX, &__ret%s%s);\n", rva, argsCall.empty() ? "" : ", ", argsCall.c_str());
+					else
+						fprintf(implFile, "    Call<void>(0x%llX, &__ret, this%s%s);\n", rva, argsCall.empty() ? "" : ", ", argsCall.c_str());
+					fprintf(implFile, "    return __ret;\n");
+				}
+				else {
+					if (isStatic)
+						fprintf(implFile, "    return CallStatic<%s>(0x%llX%s%s);\n", retType.c_str(), rva, argsCall.empty() ? "" : ", ", argsCall.c_str());
+					else
+						fprintf(implFile, "    return Call<%s>(0x%llX, this%s%s);\n", retType.c_str(), rva, argsCall.empty() ? "" : ", ", argsCall.c_str());
+				}
+
+				fprintf(implFile, "}\n\n");
+			}
+		}
+
+		fprintf(implFile, "#pragma warning(pop)\n");
+
+		fclose(headerFile);
+		fclose(implFile);
+		Utils::Log("SDK generation completed! (sdk.h and sdk.cpp)\n");
 	}
 }
