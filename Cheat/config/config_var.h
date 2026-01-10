@@ -1,5 +1,7 @@
 #pragma once
+
 #include "config_manager.h"
+
 #include <iostream>
 
 template <typename T>

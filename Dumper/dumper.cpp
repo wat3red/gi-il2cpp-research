@@ -134,7 +134,7 @@ namespace Dumper {
 				}
 
 				// Check Parameters
-				uint32_t paramCount = Il2Cpp::GetMethodParamCount(method);
+				uint32_t paramCount = Il2Cpp::method_get_param_count(method);
 				for (uint32_t i = 0; i < paramCount; i++) {
 					Il2CppType* paramType = Il2Cpp::method_get_param(method, i);
 
@@ -384,7 +384,7 @@ namespace Dumper {
 
 					tryVisitType(Il2Cpp::method_get_return_type(method));
 
-					uint32_t paramCount = Il2Cpp::GetMethodParamCount(method);
+					uint32_t paramCount = Il2Cpp::method_get_param_count(method);
 					for (uint32_t i = 0; i < paramCount; i++) {
 						tryVisitType(Il2Cpp::method_get_param(method, i));
 					}
@@ -526,7 +526,7 @@ struct Il2CppString { Il2CppObject* obj; int32_t length; char chars[1]; };)"""
 				bool isStatic = (Il2Cpp::GetMethodFlags(m) & METHOD_ATTRIBUTE_STATIC) != 0;
 
 				std::vector<std::pair<std::string, std::string>> params;
-				uint8_t pc = Il2Cpp::GetMethodParamCount(m);
+				uint8_t pc = Il2Cpp::method_get_param_count(m);
 				for (uint8_t i = 0; i < pc; i++) {
 					params.emplace_back(
 						GetCType(Il2Cpp::method_get_param(m, i)),
@@ -572,6 +572,10 @@ struct Il2CppString { Il2CppObject* obj; int32_t length; char chars[1]; };)"""
 	}
 
 	void DumpFull() {
+		FILE* file;
+		fopen_s(&file, "il2cpp_dump.cs", "w");
+		if (!file) return;
+
 		Utils::Log("Collecting classes for full dump...\n");
 		std::vector<Il2CppClass*> allClasses;
 		CollectAllClasses(allClasses);
@@ -582,26 +586,59 @@ struct Il2CppString { Il2CppObject* obj; int32_t length; char chars[1]; };)"""
 			std::string ns = Il2Cpp::class_get_namespace(cls);
 
 			Il2CppClass* parent = Il2Cpp::GetClassParent(cls);
-			std::string parentStr = parent ? Il2Cpp::class_get_name(parent) : "";
+			std::string parentStr = "";
 
-			Utils::Log("// Namespace: %s\nclass %s : %s\n{\n", ns.c_str(), name.c_str(), parentStr.c_str());
-			//Utils::Log("// TypeDefIndex: %d\n// Namespace: %s\nclass %s : %s\n{\n", i, ns.c_str(), name.c_str(), parentStr.c_str());
+			if (parent) {
+				parentStr = Il2Cpp::class_get_name(parent);
+				fprintf(file, "// Namespace: %s\nclass %s : %s\n{\n", ns.c_str(), name.c_str(), parentStr.c_str());
+			}
+			else
+				fprintf(file, "// Namespace: %s\nclass %s \n{\n\t// Fields \n\n", ns.c_str(), name.c_str());
 
 			// Fields
 			void* iter = nullptr;
 			while (FieldInfo* f = Il2Cpp::class_get_fields(cls, &iter)) {
 				int flags = Il2Cpp::field_get_flags(f);
+				std::string modifiers = "";
+
+				// ===== Access flags =====
+				int access = flags & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK;
+				switch (access) {
+				case FIELD_ATTRIBUTE_PUBLIC:            modifiers += "public"; break;
+				case FIELD_ATTRIBUTE_PRIVATE:           modifiers += "private"; break;
+				case FIELD_ATTRIBUTE_FAMILY:            modifiers += "protected"; break;
+				case FIELD_ATTRIBUTE_ASSEMBLY:          modifiers += "internal"; break;
+				case FIELD_ATTRIBUTE_FAM_OR_ASSEM:      modifiers += "protected internal"; break;
+				case FIELD_ATTRIBUTE_FAM_AND_ASSEM:     modifiers += "private protected"; break;
+				case FIELD_ATTRIBUTE_COMPILER_CONTROLLED: modifiers += "/* compiler-controlled */"; break;
+				default: modifiers += "unknown_flag"; break;
+				}
+
+				// ===== Other flags =====
+				if (flags & FIELD_ATTRIBUTE_STATIC)          modifiers += " static";
+				if (flags & FIELD_ATTRIBUTE_INIT_ONLY)       modifiers += " readonly";
+				if (flags & FIELD_ATTRIBUTE_LITERAL)         modifiers += " const";
+				if (flags & FIELD_ATTRIBUTE_NOT_SERIALIZED)  modifiers += " notserialized";
+				if (flags & FIELD_ATTRIBUTE_SPECIAL_NAME)    modifiers += " specialname";
+				if (flags & FIELD_ATTRIBUTE_RT_SPECIAL_NAME) modifiers += " rtspecialname";
+				if (flags & FIELD_ATTRIBUTE_HAS_FIELD_RVA)   modifiers += " rva";
+				if (flags & FIELD_ATTRIBUTE_HAS_DEFAULT)     modifiers += " default";
+				if (flags & FIELD_ATTRIBUTE_HAS_FIELD_MARSHAL) modifiers += " marshal";
+				//Log("3\n");
+
 				std::string typeName = Utils::StripNamespaces(Il2Cpp::GetTypeName(Il2Cpp::field_get_type(f)));
-				Utils::Log("\t%s %s; // Offset: 0x%X, Flags: 0x%X\n", typeName.c_str(), Il2Cpp::field_get_name(f), Il2Cpp::field_get_offset(f), flags);
+				int32_t offset = Il2Cpp::field_get_offset(f) - ((parentStr == "System_ValueType") ? sizeof(Il2CppObject) : 0);
+				fprintf(file, "\t%s %s %s; // Offset: 0x%X, Flags: 0x%X\n", modifiers.c_str(),
+					typeName.c_str(), Il2Cpp::field_get_name(f), offset, flags);
 			}
 
 			// Methods
 			iter = nullptr;
-			Utils::Log("\n\t// Methods\n");
+			fprintf(file, "\n\t// Methods\n");
 			while (MethodInfo* m = Il2Cpp::class_get_methods(cls, &iter)) {
 				std::string retType = Utils::StripNamespaces(Il2Cpp::GetTypeName(Il2Cpp::method_get_return_type(m)));
 				std::string params = "";
-				uint8_t count = Il2Cpp::GetMethodParamCount(m);
+				uint8_t count = Il2Cpp::method_get_param_count(m);
 				for (uint8_t p = 0; p < count; p++) {
 					params += Utils::StripNamespaces(Il2Cpp::GetTypeName(Il2Cpp::method_get_param(m, p)));
 					params += " ";
@@ -609,15 +646,68 @@ struct Il2CppString { Il2CppObject* obj; int32_t length; char chars[1]; };)"""
 					if (p < count - 1) params += ", ";
 				}
 
-				Utils::Log("\t%s %s(%s); // RVA: 0x%llX\n", retType.c_str(), Il2Cpp::method_get_name(m), params.c_str(), Il2Cpp::GetMethodPointer(m) - Config::GameBase);
+				uint16_t flags = Il2Cpp::GetMethodFlags(m);
+				// Parse access modifiers
+				uint16_t accessMask = flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK;
+				bool isPublic = (accessMask == METHOD_ATTRIBUTE_PUBLIC);
+				bool isPrivate = (accessMask == METHOD_ATTRIBUTE_PRIVATE);
+				bool isProtected = (accessMask == METHOD_ATTRIBUTE_FAMILY);
+				bool isInternal = (accessMask == METHOD_ATTRIBUTE_ASSEM);
+				bool isProtectedInternal = (accessMask == METHOD_ATTRIBUTE_FAM_OR_ASSEM);
+				bool isPrivateProtected = (accessMask == METHOD_ATTRIBUTE_FAM_AND_ASSEM);
+
+				// Parse method attributes
+				bool isStatic = (flags & METHOD_ATTRIBUTE_STATIC) != 0;
+				bool isFinal = (flags & METHOD_ATTRIBUTE_FINAL) != 0;
+				bool isVirtual = (flags & METHOD_ATTRIBUTE_VIRTUAL) != 0;
+				bool isAbstract = (flags & METHOD_ATTRIBUTE_ABSTRACT) != 0;
+				bool isNewSlot = (flags & METHOD_ATTRIBUTE_VTABLE_LAYOUT_MASK) != 0;
+
+				// Build modifiers string
+				std::string modifiers = "";
+
+				// Access level
+				if (isPublic) modifiers += "public ";
+				else if (isPrivate) modifiers += "private ";
+				else if (isProtectedInternal) modifiers += "protected internal ";
+				else if (isPrivateProtected) modifiers += "private protected ";
+				else if (isProtected) modifiers += "protected ";
+				else if (isInternal) modifiers += "internal ";
+
+				// Static
+				if (isStatic) modifiers += "static ";
+
+				// Abstract/Virtual/Override/Sealed
+				if (isAbstract) {
+					modifiers += "abstract ";
+				}
+				else if (isVirtual) {
+					if (Il2Cpp::GetMethodSlot(m) != -1 && !isNewSlot) {
+						modifiers += "override ";
+					}
+					else {
+						modifiers += "virtual ";
+					}
+
+					if (isFinal) {
+						modifiers += "sealed ";
+					}
+				}
+				else if (isFinal && !isStatic) {
+					modifiers += "sealed ";
+				}
+
+				fprintf(file, "\t%s%s %s(%s); // RVA: 0x%llX\n", modifiers.c_str(), retType.c_str(), Il2Cpp::method_get_name(m), params.c_str(), Il2Cpp::GetMethodPointer(m) - Config::GameBase);
 			}
-			Utils::Log("}\n\n");
+			fprintf(file, "}\n\n");
 		}
+
+		Utils::Log("Done creating full dump!\n");
 	}
 
 	std::string GetMethodArgs(MethodInfo* method, bool onlyNames) {
 		std::string args = "";
-		uint32_t count = Il2Cpp::GetMethodParamCount(method);
+		uint32_t count = Il2Cpp::method_get_param_count(method);
 
 		uint32_t unnamedCount = 1;
 

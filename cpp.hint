@@ -1,0 +1,1 @@
+#define RESOLVE_BY_OFFSET(return_type, name, offset, params) return_type name params

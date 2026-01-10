@@ -17,11 +17,10 @@
 #include <sstream>
 #include <filesystem>
 
-#include "lib/minhook/include/MinHook.h"
-#include "il2cpp_types.h"
-#include "sdk/types.h"
-#include "sdk/functions/resolve_funcs.h"
-#include "logger.h"
+#include "external/minhook/include/MinHook.h"
+#include "game_api/include.h"
+#include "game_api/functions/resolve_funcs.h"
+#include "logger/logger.h"
 #include "directx_hook.h"
 #include "features/features.h"
 
@@ -29,7 +28,7 @@
 #pragma comment(lib, "ws2_32.lib")
 
 // Globals
-uintptr_t g_game_base_addr = 0;
+uintptr_t g_game_base = 0;
 FILE* g_log_file = nullptr;
 bool g_block_packets = true;
 
@@ -70,11 +69,6 @@ int WINAPI h_connect(SOCKET s, const sockaddr* name, int namelen) {
 
 	return o_connect(s, name, namelen);
 }
-//
-//void (*o_set_fieldOfView)(Unity::Camera* _this, float value);
-//void h_set_fieldOfView(Unity::Camera* _this, float value) {
-//	o_set_fieldOfView(_this, 70.f);
-//}
 
 void DisableLogReport()
 {
@@ -121,18 +115,13 @@ DWORD WINAPI StartThread(LPVOID)
 
 	DisableLogReport();
 
-	g_game_base_addr = (uintptr_t)GetModuleHandle(NULL);
-	Log("Game Base: 0x%p\n", (void*)g_game_base_addr);
-
-	//MH_CreateHook((LPVOID)(g_game_base_addr + 0x15126C0), h_set_fieldOfView, (void**)&o_set_fieldOfView);
-	
-	MH_EnableHook(MH_ALL_HOOKS);
+	g_game_base = (uintptr_t)GetModuleHandle(NULL);
+	Log("Game Base: 0x%p\n", (void*)g_game_base);
 
 	std::thread block_packets_thread(([]() { Sleep(10000); g_block_packets = false; }));
 	block_packets_thread.detach();
 
-	while (!FindWindowA("UnityWndClass", nullptr))
-	{
+	while (!FindWindowA("UnityWndClass", nullptr)) {
 		Sleep(100);
 	}
 

@@ -12,6 +12,7 @@ namespace Il2Cpp {
 	extern Il2CppClass* (*class_from_type)(const Il2CppType* type);
 
 	extern const char* (*method_get_name)(MethodInfo* method);
+	extern uint8_t(*method_get_param_count)(MethodInfo* method);
 	extern const char* (*method_get_param_name)(MethodInfo* method, uint32_t index);
 	extern Il2CppType* (*method_get_param)(MethodInfo* method, uint32_t index);
 	extern Il2CppType* (*method_get_return_type)(MethodInfo* method);
@@ -41,7 +42,7 @@ namespace Il2Cpp {
 	Il2CppGenericContext* GetGenericContext(Il2CppGenericClass* genericClass);
 	Il2CppGenericInst* GenericContextGetClassInst(Il2CppGenericContext* genericContext);
 
-	uint8_t GetMethodParamCount(MethodInfo* method);
+	//uint8_t GetMethodParamCount(MethodInfo* method);
 	int16_t GetMethodSlot(MethodInfo* method);
 	uint16_t GetMethodFlags(MethodInfo* method);
 	bool GetMethodIsGenric(MethodInfo* method);

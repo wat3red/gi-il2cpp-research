@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -80,7 +80,7 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)lib</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)external;$(ProjectDir)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -100,7 +100,7 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)lib</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)external;$(ProjectDir)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -118,7 +118,7 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)lib</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)external;$(ProjectDir)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -138,7 +138,7 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)lib</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)external;$(ProjectDir)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -151,7 +151,7 @@
     <ClInclude Include="config\config_manager.h" />
     <ClInclude Include="config\config_var.h" />
     <ClInclude Include="config\imgui_config.h" />
-    <ClInclude Include="config\json.hpp" />
+    <ClInclude Include="external\json.hpp" />
     <ClInclude Include="config\config.h" />
     <ClInclude Include="directx_hook.h" />
     <ClInclude Include="features\autotalk.h" />
@@ -159,29 +159,39 @@
     <ClInclude Include="features\feature.h" />
     <ClInclude Include="features\features.h" />
     <ClInclude Include="features\map_teleport.h" />
+    <ClInclude Include="game_api\game\entities.h" />
+    <ClInclude Include="game_api\game\molemole_types.h" />
+    <ClInclude Include="game_api\game\singleton.h" />
+    <ClInclude Include="game_api\internal_include.h" />
+    <ClInclude Include="game_api\memory\signature.h" />
+    <ClInclude Include="game_api\unity\unity_collections.h" />
+    <ClInclude Include="game_api\unity\unity_delegates.h" />
+    <ClInclude Include="game_api\unity\unity_objects.h" />
+    <ClInclude Include="game_api\unity\unity_types.h" />
     <ClInclude Include="gui\gui.h" />
     <ClInclude Include="gui\menu.h" />
-    <ClInclude Include="il2cpp_types.h" />
-    <ClInclude Include="lib\imgui\backends\imgui_impl_dx11.h" />
-    <ClInclude Include="lib\imgui\backends\imgui_impl_win32.h" />
-    <ClInclude Include="lib\imgui\imconfig.h" />
-    <ClInclude Include="lib\imgui\imgui.h" />
-    <ClInclude Include="lib\imgui\imgui_internal.h" />
-    <ClInclude Include="lib\imgui\imstb_rectpack.h" />
-    <ClInclude Include="lib\imgui\imstb_textedit.h" />
-    <ClInclude Include="lib\imgui\imstb_truetype.h" />
-    <ClInclude Include="lib\minhook\include\MinHook.h" />
-    <ClInclude Include="lib\minhook\src\buffer.h" />
-    <ClInclude Include="lib\minhook\src\hde\hde32.h" />
-    <ClInclude Include="lib\minhook\src\hde\hde64.h" />
-    <ClInclude Include="lib\minhook\src\hde\pstdint.h" />
-    <ClInclude Include="lib\minhook\src\hde\table32.h" />
-    <ClInclude Include="lib\minhook\src\hde\table64.h" />
-    <ClInclude Include="lib\minhook\src\trampoline.h" />
-    <ClInclude Include="logger.h" />
-    <ClInclude Include="sdk\functions\functions_list.h" />
-    <ClInclude Include="sdk\functions\resolve_funcs.h" />
-    <ClInclude Include="sdk\types.h" />
+    <ClInclude Include="game_api\il2cpp\il2cpp_types.h" />
+    <ClInclude Include="external\imgui\backends\imgui_impl_dx11.h" />
+    <ClInclude Include="external\imgui\backends\imgui_impl_win32.h" />
+    <ClInclude Include="external\imgui\imconfig.h" />
+    <ClInclude Include="external\imgui\imgui.h" />
+    <ClInclude Include="external\imgui\imgui_internal.h" />
+    <ClInclude Include="external\imgui\imstb_rectpack.h" />
+    <ClInclude Include="external\imgui\imstb_textedit.h" />
+    <ClInclude Include="external\imgui\imstb_truetype.h" />
+    <ClInclude Include="external\minhook\include\MinHook.h" />
+    <ClInclude Include="external\minhook\src\buffer.h" />
+    <ClInclude Include="external\minhook\src\hde\hde32.h" />
+    <ClInclude Include="external\minhook\src\hde\hde64.h" />
+    <ClInclude Include="external\minhook\src\hde\pstdint.h" />
+    <ClInclude Include="external\minhook\src\hde\table32.h" />
+    <ClInclude Include="external\minhook\src\hde\table64.h" />
+    <ClInclude Include="external\minhook\src\trampoline.h" />
+    <ClInclude Include="game_api\include.h" />
+    <ClInclude Include="logger\logger.h" />
+    <ClInclude Include="game_api\functions\functions_list.h" />
+    <ClInclude Include="game_api\functions\resolve_funcs.h" />
+    <ClInclude Include="game_api\il2cpp\il2cpp.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="config\config_manager.cpp" />
@@ -193,23 +203,28 @@
     <ClCompile Include="features\esp.cpp" />
     <ClCompile Include="features\features.cpp" />
     <ClCompile Include="features\map_teleport.cpp" />
+    <ClCompile Include="game_api\game\entities.cpp" />
+    <ClCompile Include="game_api\game\singleton.cpp" />
+    <ClCompile Include="game_api\il2cpp\il2cpp_types.cpp" />
+    <ClCompile Include="game_api\memory\signature.cpp" />
+    <ClCompile Include="game_api\unity\unity_objects.cpp" />
     <ClCompile Include="gui\gui.cpp" />
     <ClCompile Include="gui\menu.cpp" />
-    <ClCompile Include="lib\imgui\backends\imgui_impl_dx11.cpp" />
-    <ClCompile Include="lib\imgui\backends\imgui_impl_win32.cpp" />
-    <ClCompile Include="lib\imgui\imgui.cpp" />
-    <ClCompile Include="lib\imgui\imgui_demo.cpp" />
-    <ClCompile Include="lib\imgui\imgui_draw.cpp" />
-    <ClCompile Include="lib\imgui\imgui_tables.cpp" />
-    <ClCompile Include="lib\imgui\imgui_widgets.cpp" />
-    <ClCompile Include="lib\minhook\src\buffer.c" />
-    <ClCompile Include="lib\minhook\src\hde\hde32.c" />
-    <ClCompile Include="lib\minhook\src\hde\hde64.c" />
-    <ClCompile Include="lib\minhook\src\hook.c" />
-    <ClCompile Include="lib\minhook\src\trampoline.c" />
-    <ClCompile Include="logger.cpp" />
-    <ClCompile Include="sdk\functions\resolve_funcs.cpp" />
-    <ClCompile Include="sdk\types.cpp" />
+    <ClCompile Include="external\imgui\backends\imgui_impl_dx11.cpp" />
+    <ClCompile Include="external\imgui\backends\imgui_impl_win32.cpp" />
+    <ClCompile Include="external\imgui\imgui.cpp" />
+    <ClCompile Include="external\imgui\imgui_demo.cpp" />
+    <ClCompile Include="external\imgui\imgui_draw.cpp" />
+    <ClCompile Include="external\imgui\imgui_tables.cpp" />
+    <ClCompile Include="external\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="external\minhook\src\buffer.c" />
+    <ClCompile Include="external\minhook\src\hde\hde32.c" />
+    <ClCompile Include="external\minhook\src\hde\hde64.c" />
+    <ClCompile Include="external\minhook\src\hook.c" />
+    <ClCompile Include="external\minhook\src\trampoline.c" />
+    <ClCompile Include="logger\logger.cpp" />
+    <ClCompile Include="game_api\functions\resolve_funcs.cpp" />
+    <ClCompile Include="game_api\il2cpp\il2cpp.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

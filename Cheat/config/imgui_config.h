@@ -3,7 +3,6 @@
 #include <imgui/imgui.h>
 
 #include "config_var.h"
-#include "../sdk/types.h"
 
 namespace ImGuiEx {
 	bool Combo(const char* label, ConfigVar<int>& currentItem, const char* const items[], int itemsCount);

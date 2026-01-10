@@ -159,7 +159,6 @@
     <ClCompile Include="dumper.cpp" />
     <ClInclude Include="dumper.h" />
     <ClInclude Include="hooks.h" />
-    <ClInclude Include="ida.h" />
     <ClInclude Include="il2cpp_bridge.h" />
     <ClInclude Include="il2cpp_types.h" />
     <ClInclude Include="lib\minhook\include\MinHook.h" />
@@ -170,7 +169,6 @@
     <ClInclude Include="lib\minhook\src\hde\table32.h" />
     <ClInclude Include="lib\minhook\src\hde\table64.h" />
     <ClInclude Include="lib\minhook\src\trampoline.h" />
-    <ClInclude Include="sdk.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

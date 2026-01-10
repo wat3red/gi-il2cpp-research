@@ -1,14 +1,15 @@
 ﻿#define IMGUI_DEFINE_MATH_OPERATORS
 
 #include "esp.h"
-#include "../sdk/types.h"
-#include "../sdk/functions/resolve_funcs.h"
-#include "../logger.h"
-#include "../config/imgui_config.h"
-#include "../config/config.h"
+
+#include <game_api/include.h>
+#include <logger/logger.h>
+#include <config/imgui_config.h>
+#include <config/config.h>
 
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
+
 #include <string>
 #include <mutex> // Required for thread safety
 
@@ -147,14 +148,25 @@ namespace features {
 	void ESP::OnUpdate() {
 		if (!config.esp.enabled) return;
 
-		MoleMole::EntityManager* entity_manager = MoleMole::EntityManager::GetEntityManager();
+		MoleMole::EntityManager* entity_manager = MoleMole::EntityManager::Instance();
 		if (!entity_manager) return;
 
 		Unity::Camera* camera = Unity::Camera::GetMain();
 		if (!camera) return;
 
-		Unity::Vector3 cameraPos = camera->GetTransform()->GetPosition();
+		Log("1\n");
+
+		Unity::Transform* cameraTransform = camera->GetTransform();
+		if (!cameraTransform) return;
+
+		Log("2\n");
+
+
+		Unity::Vector3 cameraPos = cameraTransform->GetPosition();
 		auto viewport = ImGui::GetMainViewport();
+
+		Log("3\n");
+
 
 		// Create a TEMPORARY list. We work on this so we don't disturb the drawing thread.
 		std::vector<ESPItem> temp_list;
@@ -227,7 +239,7 @@ namespace features {
 
 			// Safe name retrieval
 			auto* namePtr = entity->GetName();
-			if (namePtr) item.name = namePtr->c_str();
+			if (namePtr) item.name = namePtr->ToCStr();
 			if (item.name.empty()) item.name = GetEntityTypeName(type);
 
 			// Push to local list (fast, no locking needed yet)

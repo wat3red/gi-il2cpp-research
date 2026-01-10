@@ -92,11 +92,5 @@
     <ClInclude Include="il2cpp_bridge.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ida.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
 </Project>

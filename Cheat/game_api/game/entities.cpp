@@ -1,0 +1,41 @@
+#include "entities.h"
+#include "../functions/resolve_funcs.h"
+
+using namespace MoleMole;
+
+EntityManager* EntityManager::Instance()
+{
+	return InLevelDrumPageContext_get_ENTITY();
+}
+
+std::vector<BaseEntity*> EntityManager::GetEntities()
+{
+	Unity::List<BaseEntity*>* entityList = EntityManager_GetEntities(this);
+
+	std::vector<BaseEntity*> vector;
+	if (entityList) {
+		//Log("entityList: %p, size: %d \n", entityList, entityList->size);
+		for (int i = 0; i < entityList->size; i++) {
+			vector.push_back(entityList->array->items[i]);
+		}
+	}
+
+	return vector;
+}
+
+Unity::GameObject* BaseEntity::GetGameObject()
+{
+	return BaseEntity_get_gameObject(this);
+}
+
+EntityType BaseEntity::GetType()
+{
+	// 6.1
+	// return *(MoleMole::EntityType*)((uintptr_t)this + 0x438); // DGHCHNBGOPB 
+	return *(MoleMole::EntityType*)((uintptr_t)this + 0x0);
+}
+
+Il2CppString* MoleMole::BaseEntity::GetName()
+{
+	return BaseEntity_GetName(this);
+}

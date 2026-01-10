@@ -15,6 +15,7 @@ namespace Il2Cpp {
 	Il2CppClass* (*class_from_type)(const Il2CppType* type) = nullptr;
 
 	const char* (*method_get_name)(MethodInfo* method) = nullptr;
+	uint8_t(*method_get_param_count)(MethodInfo* method) = nullptr;
 	const char* (*method_get_param_name)(MethodInfo* method, uint32_t index) = nullptr;
 	Il2CppType* (*method_get_param)(MethodInfo* method, uint32_t index) = nullptr;
 	Il2CppType* (*method_get_return_type)(MethodInfo* method) = nullptr;
@@ -57,6 +58,8 @@ namespace Il2Cpp {
 		field_get_offset = (decltype(field_get_offset))(b + 0x3E7960);
 		// E8 ? ? ? ? 48 8B CE 48 2B C6
 		method_get_name = (decltype(method_get_name))(b + 0x3E7EC0);
+		// E8 ? ? ? ? 3B C5 75
+		method_get_param_count = (decltype(method_get_param_count))(b + 0x3E7F10);
 		// direct: 56 48 83 EC ? 0F B6 41 ? 39 D0 76 ? 89 D6 48 8B 51 ? 48 85 D2 74 ? 48 B8 ? ? ? ? ? ? ? ? ? ? ? 74 ? 89 F1 ? ? ? ? ? ? ? ? 48 83 C4
 		method_get_param_name = (decltype(method_get_param_name))(b + 0x3E8020);
 		// E8 ? ? ? ? 48 8B C8 E8 ? ? ? ? 4C 8B 4E
@@ -124,9 +127,10 @@ namespace Il2Cpp {
 		return *(int16_t*)((uintptr_t)klass + 0x36) ^ 0xFFFF8DC0;
 	}
 
-	uint8_t GetMethodParamCount(MethodInfo* method) {
-		return *(uint8_t*)((uintptr_t)method + 0x2E);
-	}
+	/*	uint8_t GetMethodParamCount(MethodInfo* method) {
+			// E8 ? ? ? ? 3B C5 75
+			return *(uint8_t*)((uintptr_t)method + 0x2E);
+		}*/
 
 	int16_t GetMethodSlot(MethodInfo* method) {
 		// 48 C7 40 ? 00 00 00 00 ? ? ? 66 C7 40
