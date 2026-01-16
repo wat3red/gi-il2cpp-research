@@ -76,7 +76,8 @@ public:
 			return false;
 		}
 
-		// Set Start to 0
+		// Set Start to 4
+		dwValue = 4;
 		lResult = RegSetValueEx(hKey, L"Start", 0, REG_DWORD,
 			(const BYTE*)&dwValue, sizeof(dwValue));
 		if (lResult != ERROR_SUCCESS) {
@@ -86,6 +87,7 @@ public:
 		}
 
 		// Set Type to 0
+		dwValue = 0;
 		lResult = RegSetValueEx(hKey, L"Type", 0, REG_DWORD,
 			(const BYTE*)&dwValue, sizeof(dwValue));
 		if (lResult != ERROR_SUCCESS) {

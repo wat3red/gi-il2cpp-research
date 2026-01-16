@@ -22,8 +22,8 @@ void features::InitAllFeatures() {
 	void* MiHoYo_SDK_Dll_Update_ptr = Il2Cpp::Method::GetMethodPointer(Il2Cpp::Method::Find("MiHoYo.SDK", "Dll", "Update", 0));
 	MH_CreateHook(MiHoYo_SDK_Dll_Update_ptr, (LPVOID)hMiHoYo_SDK_Dll_Update, (LPVOID*)&MiHoYo_SDK_Dll_Update);
 
-	//all_features.push_back(new ESP());
-	//all_features.push_back(new Autotalk());
+	all_features.push_back(new ESP());
+	all_features.push_back(new Autotalk());
 
 	for (Feature* feature : all_features) {
 		feature->OnInit();

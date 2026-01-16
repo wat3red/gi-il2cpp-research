@@ -82,7 +82,19 @@ void DisableLogReport()
 	CreateFileW((path / "MiHoYoMTRSDK.dll").c_str(), GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 }
 
-// === Packet Blocker Hooks ===
+bool PatchMemory(void* address, const void* bytes, size_t size) {
+	DWORD oldProtect;
+	if (!VirtualProtect(address, size, PAGE_EXECUTE_READWRITE, &oldProtect))
+		return false;
+
+	std::memcpy(address, bytes, size);
+	FlushInstructionCache(GetCurrentProcess(), address, size);
+
+	VirtualProtect(address, size, oldProtect, &oldProtect);
+	return true;
+}
+
+// Packet Blocker Hooks
 bool InitBlockingHooks() {
 	if (MH_Initialize() != MH_OK) {
 		Log("MinHook init failed!\n");
@@ -94,6 +106,10 @@ bool InitBlockingHooks() {
 	MH_CreateHookApi(L"ws2_32", "connect", h_connect, (LPVOID*)&o_connect);
 
 	MH_EnableHook(MH_ALL_HOOKS);
+
+	// ban :)
+	//constexpr uint8_t nops[2] = { 0x90, 0x90 }; 
+	//PatchMemory((void*)(g_game_base + 0x992B98), nops, sizeof(nops));
 
 	return 1;
 }
@@ -113,12 +129,16 @@ DWORD WINAPI StartThread(LPVOID)
 	std::cout.clear();
 	std::cerr.clear();
 
+	//while (true) {
+		//Sleep(1000);
+	//}
+
 	DisableLogReport();
 
 	g_game_base = (uintptr_t)GetModuleHandle(NULL);
 	Log("Game Base: 0x%p\n", (void*)g_game_base);
 
-	std::thread block_packets_thread(([]() { Sleep(10000); g_block_packets = false; }));
+	std::thread block_packets_thread(([]() { Sleep(11'000); g_block_packets = false; }));
 	block_packets_thread.detach();
 
 	while (!FindWindowA("UnityWndClass", nullptr)) {
@@ -134,11 +154,57 @@ DWORD WINAPI StartThread(LPVOID)
 	return 0;
 }
 
+
+//
+//#include <windows.h>
+//#include <tlhelp32.h>
+//#include <string>
+//
+//// Returns PID of the first process matching processName, or 0 if not found
+//DWORD FindProcessByName(const std::wstring& processName)
+//{
+//	DWORD pid = 0;
+//
+//	HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+//	if (snapshot == INVALID_HANDLE_VALUE)
+//		return 0;
+//
+//	PROCESSENTRY32W pe;
+//	pe.dwSize = sizeof(pe);
+//
+//	if (Process32FirstW(snapshot, &pe))
+//	{
+//		do
+//		{
+//			if (_wcsicmp(pe.szExeFile, processName.c_str()) == 0)
+//			{
+//				pid = pe.th32ProcessID;
+//				break;
+//			}
+//		} while (Process32NextW(snapshot, &pe));
+//	}
+//
+//	CloseHandle(snapshot);
+//	return pid;
+//}
+//
+
+
+
+
+
 // DLL entry
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lp_reserved)
 {
 	if (ul_reason_for_call == DLL_PROCESS_ATTACH) {
 		DisableThreadLibraryCalls(hModule);
+
+		g_game_base = (uintptr_t)GetModuleHandle(NULL);
+
+		//InitBlockingHooks();
+
+		//Sleep(30000);
+
 		if (InitBlockingHooks())
 			CreateThread(NULL, 0, StartThread, NULL, 0, NULL);
 	}
