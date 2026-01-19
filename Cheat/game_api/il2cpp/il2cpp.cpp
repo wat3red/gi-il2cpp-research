@@ -14,7 +14,7 @@ struct AssemblyVector
 
 Il2CppAssembly** il2cpp_domain_get_assemblies(size_t* size) {
 	// xref: 48 8B 3D ? ? ? ? 48 39 DF
-	auto* vec = reinterpret_cast<AssemblyVector*>(g_game_base + 0x4C7B0F8);
+	auto* vec = reinterpret_cast<AssemblyVector*>(g_game_base + 0x4E195F8);
 	*size = static_cast<size_t>(vec->end - vec->begin);
 	return vec->begin;
 }
@@ -74,7 +74,6 @@ Il2CppClass* Il2Cpp::Class::FromName(const char* namespaceName, const char* clas
 
 	return nullptr;
 }
-
 
 /*static const std::vector<Il2CppClass*>& GetAllClasses()
 {

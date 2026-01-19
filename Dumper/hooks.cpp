@@ -42,9 +42,9 @@ namespace Hooks {
             return false;
         }
 
-        MH_CreateHookApi(L"ws2_32", "send", (LPVOID)h_send, (LPVOID*)&o_send);
-        MH_CreateHookApi(L"ws2_32", "WSASend", (LPVOID)h_WSASend, (LPVOID*)&o_WSASend);
-        MH_CreateHookApi(L"ws2_32", "connect", (LPVOID)h_connect, (LPVOID*)&o_connect);
+        //MH_CreateHookApi(L"ws2_32", "send", (LPVOID)h_send, (LPVOID*)&o_send);
+        //MH_CreateHookApi(L"ws2_32", "WSASend", (LPVOID)h_WSASend, (LPVOID*)&o_WSASend);
+        //MH_CreateHookApi(L"ws2_32", "connect", (LPVOID)h_connect, (LPVOID*)&o_connect);
 
         return MH_EnableHook(MH_ALL_HOOKS) == MH_OK;
     }

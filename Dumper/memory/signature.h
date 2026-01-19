@@ -12,8 +12,6 @@ namespace Mem {
 
         bool Valid() const;
 
-        void* ScanRange(const uint8_t* base, size_t size) const;
-
         void* Scan(const uint8_t* base = 0, size_t size = 0) const;
         void* ScanXref(const uint8_t* base = 0, size_t size = 0) const;
 

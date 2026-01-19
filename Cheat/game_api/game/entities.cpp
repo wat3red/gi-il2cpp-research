@@ -30,9 +30,10 @@ Unity::GameObject* BaseEntity::GetGameObject()
 
 EntityType BaseEntity::GetType()
 {
+	// FJIKAJMIJLC
 	// 6.1
 	// return *(MoleMole::EntityType*)((uintptr_t)this + 0x438); // DGHCHNBGOPB 
-	return *(MoleMole::EntityType*)((uintptr_t)this + 0x0);
+	return *(MoleMole::EntityType*)((uintptr_t)this + 0x470);
 }
 
 Il2CppString* MoleMole::BaseEntity::GetName()

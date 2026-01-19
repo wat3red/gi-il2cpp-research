@@ -10,5 +10,5 @@ Il2CppString* Il2CppString::FromCStr(const char* c_str)
 
 const char* Il2CppString::ToCStr()
 {
-	return Il2Cpp::Method::Call<const char*>("System.Runtime.InteropServices", "Marshal", "StringToHGlobalAnsi", 0, this);
+	return Il2Cpp::Method::Call<const char*>("System.Runtime.InteropServices", "Marshal", "StringToHGlobalAnsi", 1, this);
 }

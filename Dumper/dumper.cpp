@@ -230,7 +230,7 @@ namespace Dumper {
 
 		return name;
 	}
-
+	
 	std::string GetCType(Il2CppType* type) {
 		if (!type) return "";
 
@@ -326,7 +326,7 @@ namespace Dumper {
 			Utils::Log("Exception raised, collected %d classes\n", output.size());
 		}
 	}
-
+	/*
 	void SortClasses(std::vector<Il2CppClass*>& classes) {
 		std::vector<Il2CppClass*> sorted;
 		std::unordered_set<Il2CppClass*> visited;
@@ -403,7 +403,7 @@ namespace Dumper {
 		// Replace original list with sorted list
 		classes = sorted;
 	}
-
+	/*
 	void DumpForIDA() {
 		FILE* hFile;
 		fopen_s(&hFile, "ida.h", "w");
@@ -569,7 +569,7 @@ struct Il2CppString { Il2CppObject* obj; int32_t length; char chars[1]; };)"""
 
 		fclose(hFile);
 		Utils::Log("IDA dump completed (ida.h + ida_methods.json)\n");
-	}
+	}*/
 
 	void DumpFull() {
 		FILE* file;
@@ -581,12 +581,15 @@ struct Il2CppString { Il2CppObject* obj; int32_t length; char chars[1]; };)"""
 		CollectAllClasses(allClasses);
 
 		for (Il2CppClass* cls : allClasses) {
-			// Simplified for brevity, logic remains identical to original
+			//Utils::Log("%d\n", __LINE__);
+
 			std::string name = Il2Cpp::class_get_name(cls);
 			std::string ns = Il2Cpp::class_get_namespace(cls);
+			//Utils::Log("%d\n", __LINE__);
 
 			Il2CppClass* parent = Il2Cpp::GetClassParent(cls);
 			std::string parentStr = "";
+			//Utils::Log("%d\n", __LINE__);
 
 			if (parent) {
 				parentStr = Il2Cpp::class_get_name(parent);
@@ -594,6 +597,7 @@ struct Il2CppString { Il2CppObject* obj; int32_t length; char chars[1]; };)"""
 			}
 			else
 				fprintf(file, "// Namespace: %s\nclass %s \n{\n\t// Fields \n\n", ns.c_str(), name.c_str());
+			//Utils::Log("%d\n", __LINE__);
 
 			// Fields
 			void* iter = nullptr;
@@ -632,10 +636,15 @@ struct Il2CppString { Il2CppObject* obj; int32_t length; char chars[1]; };)"""
 					typeName.c_str(), Il2Cpp::field_get_name(f), offset, flags);
 			}
 
+			//Utils::Log("%d\n", __LINE__);
+
+
 			// Methods
 			iter = nullptr;
 			fprintf(file, "\n\t// Methods\n");
 			while (MethodInfo* m = Il2Cpp::class_get_methods(cls, &iter)) {
+				//Utils::Log("%d\n", __LINE__);
+
 				std::string retType = Utils::StripNamespaces(Il2Cpp::GetTypeName(Il2Cpp::method_get_return_type(m)));
 				std::string params = "";
 				uint8_t count = Il2Cpp::method_get_param_count(m);
@@ -645,6 +654,7 @@ struct Il2CppString { Il2CppObject* obj; int32_t length; char chars[1]; };)"""
 					params += Il2Cpp::method_get_param_name(m, p);
 					if (p < count - 1) params += ", ";
 				}
+				//Utils::Log("%d\n", __LINE__);
 
 				uint16_t flags = Il2Cpp::GetMethodFlags(m);
 				// Parse access modifiers
@@ -682,6 +692,8 @@ struct Il2CppString { Il2CppObject* obj; int32_t length; char chars[1]; };)"""
 					modifiers += "abstract ";
 				}
 				else if (isVirtual) {
+					//Utils::Log("%d\n", __LINE__);
+
 					if (Il2Cpp::GetMethodSlot(m) != -1 && !isNewSlot) {
 						modifiers += "override ";
 					}
@@ -696,6 +708,7 @@ struct Il2CppString { Il2CppObject* obj; int32_t length; char chars[1]; };)"""
 				else if (isFinal && !isStatic) {
 					modifiers += "sealed ";
 				}
+				//Utils::Log("%d\n", __LINE__);
 
 				fprintf(file, "\t%s%s %s(%s); // RVA: 0x%llX\n", modifiers.c_str(), retType.c_str(), Il2Cpp::method_get_name(m), params.c_str(), Il2Cpp::GetMethodPointer(m) - Config::GameBase);
 			}
@@ -705,7 +718,7 @@ struct Il2CppString { Il2CppObject* obj; int32_t length; char chars[1]; };)"""
 		Utils::Log("Done creating full dump!\n");
 	}
 
-	std::string GetMethodArgs(MethodInfo* method, bool onlyNames) {
+	/*std::string GetMethodArgs(MethodInfo* method, bool onlyNames) {
 		std::string args = "";
 		uint32_t count = Il2Cpp::method_get_param_count(method);
 
@@ -735,68 +748,9 @@ struct Il2CppString { Il2CppObject* obj; int32_t length; char chars[1]; };)"""
 			args += "MethodInfo* method_info";
 
 		return args;
-	}
+	}*/
 
-	static size_t GetIl2CppTypeSize(const Il2CppType* type)
-	{
-		if (!type) return 0;
-
-		switch (type->type)
-		{
-		case IL2CPP_TYPE_BOOLEAN: return 1;
-		case IL2CPP_TYPE_I1: case IL2CPP_TYPE_U1: return 1;
-		case IL2CPP_TYPE_I2: case IL2CPP_TYPE_U2: return 2;
-		case IL2CPP_TYPE_CHAR: return 2;
-		case IL2CPP_TYPE_I4: case IL2CPP_TYPE_U4: case IL2CPP_TYPE_R4: return 4;
-		case IL2CPP_TYPE_I8: case IL2CPP_TYPE_U8: case IL2CPP_TYPE_R8: return 8;
-		case IL2CPP_TYPE_PTR: case IL2CPP_TYPE_CLASS: case IL2CPP_TYPE_STRING:
-		case IL2CPP_TYPE_OBJECT: case IL2CPP_TYPE_SZARRAY: case IL2CPP_TYPE_ARRAY:
-			return sizeof(void*);
-		default:
-			break;
-		}
-		if (type->type == IL2CPP_TYPE_VALUETYPE)
-		{
-			Il2CppClass* klass = Il2Cpp::class_from_type(type);
-			if (!klass) return 0;
-
-			size_t valSize = Il2Cpp::GetClassSize(klass);
-
-			if (valSize > 0) return valSize;
-		}
-
-		return 0;
-	}
-
-	bool HasReturnBuffer(MethodInfo* method)
-	{
-		Il2CppType* ret = Il2Cpp::method_get_return_type(method);
-		if (!ret) return false;
-
-		Il2CppClass* cls = Il2Cpp::class_from_type(ret);
-		if (!cls) return false;
-
-		// F6 41 ? ? 0F 85 ? ? ? ? 4C 89 C3
-		//bool byref = ((*(uint8_t*)((uint8_t*)ret + 0xB) & 0x40) != 0);
-
-		if (ret->type != IL2CPP_TYPE_VALUETYPE)
-			return false;
-
-		Il2CppClass* parentClass = Il2Cpp::GetClassParent(cls);
-		std::string parentName = "";
-		if (parentClass)
-			parentName = GetIl2CppClassName(parentClass);
-
-		if (parentName == "System_Enum")
-			return false;
-
-		size_t size = GetIl2CppTypeSize(ret);
-		if (size == 0)
-			return false;
-
-		return size > 8;
-	}
-
+	/*
 	std::string GetIl2CppMethodName(std::unordered_map<MethodInfo*, std::string>& methodNames, std::unordered_set<std::string>& takenNames, MethodInfo* method) {
 		auto it = methodNames.find(method);
 		if (it != methodNames.end()) {
@@ -820,7 +774,7 @@ struct Il2CppString { Il2CppObject* obj; int32_t length; char chars[1]; };)"""
 
 		return name;
 	}
-
+	
 	void GenerateSDK() {
 		FILE* headerFile;
 		FILE* implFile;
@@ -1043,4 +997,5 @@ inline R CallStatic(uintptr_t rva, Args... args) {
 		fclose(implFile);
 		Utils::Log("SDK generation completed! (sdk.h and sdk.cpp)\n");
 	}
+	*/
 }

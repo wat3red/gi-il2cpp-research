@@ -23,7 +23,7 @@ void features::InitAllFeatures() {
 	MH_CreateHook(MiHoYo_SDK_Dll_Update_ptr, (LPVOID)hMiHoYo_SDK_Dll_Update, (LPVOID*)&MiHoYo_SDK_Dll_Update);
 
 	all_features.push_back(new ESP());
-	all_features.push_back(new Autotalk());
+	//all_features.push_back(new Autotalk());
 
 	for (Feature* feature : all_features) {
 		feature->OnInit();

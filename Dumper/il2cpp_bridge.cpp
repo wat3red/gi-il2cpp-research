@@ -1,6 +1,7 @@
 // il2cpp_bridge.cpp
 #include "il2cpp_bridge.h"
 #include "utils.h"
+#include "memory/signature.h"
 
 // Define Global Config
 uintptr_t Config::GameBase = 0;
@@ -36,60 +37,41 @@ namespace Il2Cpp {
 	std::unordered_map<Il2CppType*, std::string> g_cached_types;
 
 	void Initialize() {
-		uintptr_t b = Config::GameBase;
-
-		// E8 ? ? ? ? 48 85 C0 74 ? 48 8D 5D
-		class_get_methods = (decltype(class_get_methods))(b + 0x446130);
-		// E8 ? ? ? ? 45 33 F6 C7 85
-		class_get_name = (decltype(class_get_name))(b + 0xA790);
-		// E8 ? ? ? ? 49 C7 C7 ? ? ? ? 4D 8B C7
-		class_get_namespace = (decltype(class_get_namespace))(b + 0x3E75E0);
-		// E8 ? ? ? ? 48 85 C0 75 ? E9 ? ? ? ? 89 E8
-		class_get_fields = (decltype(class_get_fields))(b + 0x445B30);
-		// E8 ? ? ? ? 48 89 C6 44 0F B7 B0
-		class_from_type = (decltype(class_from_type))(b + 0x442EA0);
-		// E8 ? ? ? ? 48 89 C3 EB ? 83 BD
-		field_get_name = (decltype(field_get_name))(b + 0x451F50);
-		// E8 ? ? ? ? 48 8B CB 41 89 46
-		field_get_flags = (decltype(field_get_flags))(b + 0x3E7930);
-		// E8 ? ? ? ? 48 8B C8 49 89 46 ? E8
-		field_get_type = (decltype(field_get_type))(b + 0x3E7970);
-		// E8 ? ? ? ? 49 03 45
-		field_get_offset = (decltype(field_get_offset))(b + 0x3E7960);
-		// E8 ? ? ? ? 48 8B CE 48 2B C6
-		method_get_name = (decltype(method_get_name))(b + 0x3E7EC0);
-		// E8 ? ? ? ? 3B C5 75
-		method_get_param_count = (decltype(method_get_param_count))(b + 0x3E7F10);
-		// direct: 56 48 83 EC ? 0F B6 41 ? 39 D0 76 ? 89 D6 48 8B 51 ? 48 85 D2 74 ? 48 B8 ? ? ? ? ? ? ? ? ? ? ? 74 ? 89 F1 ? ? ? ? ? ? ? ? 48 83 C4
-		method_get_param_name = (decltype(method_get_param_name))(b + 0x3E8020);
-		// E8 ? ? ? ? 48 8B C8 E8 ? ? ? ? 4C 8B 4E
-		method_get_param = (decltype(method_get_param))(b + 0x3E7F20);
-		// E8 ? ? ? ? 48 83 C4 ? 48 89 C7 0F B6 47
-		method_get_return_type = (decltype(method_get_return_type))(b + 0x45D360);
-		// E8 ? ? ? ? 4C 8D 05 ? ? ? ? 48 8D 4D ? 48 8D 55 ? E8 ? ? ? ? 48 89 E9 4C 8D 45
-		type_get_name_tmp = (decltype(type_get_name_tmp))(b + 0x45C620);
-		// E8 ? ? ? ? B3 ? E9 ? ? ? ? 4C 8B B6
-		free_temp_str = (decltype(free_temp_str))(b + 0x8DFF80);
-		// 0F BE 41 ? 83 F8 ? 74
-		type_get_class_or_element_class = (decltype(type_get_class_or_element_class))(b + 0x3E8380); // Return class if type is not an array. Return element type if it is an array.
-		// E8 ? ? ? ? 0F B7 A8
-		MetadataCache__GetTypeInfoFromTypeDefinitionIndex = (decltype(MetadataCache__GetTypeInfoFromTypeDefinitionIndex))(b + 0x452110);
-		// direct: 41 56 56 57 53 48 83 EC ? 48 89 D7 49 89 CE 48 8B 42 ? 48 BA
-		vm__GetEnumFieldValue = (decltype(vm__GetEnumFieldValue))(b + 0x44F970);
+		class_get_methods = (decltype(class_get_methods))((uintptr_t)Mem::Signature("E8 ? ? ? ? 48 85 C0 74 ? 48 8D 5D").ScanXref());
+		class_get_name = (decltype(class_get_name))((uintptr_t)Mem::Signature("E8 ? ? ? ? 45 33 F6 C7 85").ScanXref());
+		class_get_namespace = (decltype(class_get_namespace))((uintptr_t)Mem::Signature("E8 ? ? ? ? 49 C7 C7 ? ? ? ? 4D 8B C7").ScanXref());
+		class_get_fields = (decltype(class_get_fields))((uintptr_t)Mem::Signature("E8 ? ? ? ? 48 85 C0 75 ? E9 ? ? ? ? 89 E8").ScanXref());
+		class_from_type = (decltype(class_from_type))((uintptr_t)Mem::Signature("E8 ? ? ? ? 48 89 C6 44 0F B7 B0").ScanXref());
+		field_get_name = (decltype(field_get_name))((uintptr_t)Mem::Signature("E8 ? ? ? ? 48 89 C3 EB ? 83 BD").ScanXref());
+		field_get_flags = (decltype(field_get_flags))((uintptr_t)Mem::Signature("E8 ? ? ? ? 48 8B CB 41 89 46").ScanXref());
+		field_get_type = (decltype(field_get_type))((uintptr_t)Mem::Signature("E8 ? ? ? ? 48 8B C8 49 89 46 ? E8").ScanXref());
+		field_get_offset = (decltype(field_get_offset))((uintptr_t)Mem::Signature("E8 ? ? ? ? 49 03 45").ScanXref());
+		method_get_name = (decltype(method_get_name))((uintptr_t)Mem::Signature("E8 ? ? ? ? 48 8B CE 48 2B C6").ScanXref());
+		method_get_param_count = (decltype(method_get_param_count))((uintptr_t)Mem::Signature("E8 ? ? ? ? 3B C5 75").ScanXref());
+		method_get_param_name = (decltype(method_get_param_name))((uintptr_t)Mem::Signature("56 48 83 EC ? 0F B6 41 ? 39 D0 76 ? 89 D6 48 8B 51 ? 48 85 D2 74 ? 48 B8 ? ? ? ? ? ? ? ? 48 33 42 ? 74 ? 89 F1 ? ? ? ? 48 8B 44 C8").Scan());
+		method_get_param = (decltype(method_get_param))((uintptr_t)Mem::Signature("E8 ? ? ? ? 48 8B C8 E8 ? ? ? ? 4C 8B 4E").ScanXref());
+		method_get_return_type = (decltype(method_get_return_type))((uintptr_t)Mem::Signature("E8 ? ? ? ? 48 83 C4 ? 48 89 C7 0F B6 47").ScanXref());
+		type_get_name_tmp = (decltype(type_get_name_tmp))((uintptr_t)Mem::Signature("E8 ? ? ? ? 4C 8D 05 ? ? ? ? 48 8D 4D ? 48 8D 55 ? E8 ? ? ? ? 48 89 E9 4C 8D 45").ScanXref());
+		free_temp_str = (decltype(free_temp_str))((uintptr_t)Mem::Signature("E8 ? ? ? ? B3 ? E9 ? ? ? ? 4C 8B B6").ScanXref());
+		type_get_class_or_element_class = (decltype(type_get_class_or_element_class))((uintptr_t)Mem::Signature("0F BE 41 ? 83 F8 ? 74").Scan()); // Return class if type is not an array. Return element type if it is an array.
+		MetadataCache__GetTypeInfoFromTypeDefinitionIndex = (decltype(MetadataCache__GetTypeInfoFromTypeDefinitionIndex))((uintptr_t)Mem::Signature("E8 ? ? ? ? 0F B7 A8").ScanXref());
+		vm__GetEnumFieldValue = (decltype(vm__GetEnumFieldValue))((uintptr_t)Mem::Signature("E8 ? ? ? ? 48 39 44 24 ? 8B 54 24").ScanXref());
 	}
 
 	uint8_t GetTypeEnum(Il2CppType* type) {
+		// unchanged since 6.2
 		// 0F B6 46 ? C1 E0 ? 3D ? ? ? ? 75 ? 8B 05
 		return *(uint8_t*)((uintptr_t)type + 0xA);
 	}
 
 	uint32_t GetClassSize(Il2CppClass* klass) {
 		// 0F B7 9F ? ? ? ? 48 89 F9
-		return (uint32_t)((*(int16_t*)((uintptr_t)klass + 0xB4)) - 4);
+		return (uint32_t)((*(int16_t*)((uintptr_t)klass + 0xB8)) - 4);
 	}
 
 	Il2CppClass* GetClassParent(Il2CppClass* klass) {
-#define METADATA_BASE_POINTER 0x4C7B1F0 // 48 8B 05 ? ? ? ? ? ? ? 4D 39 C8 75 ? 48 83 C1
+#define METADATA_BASE_POINTER 0x4E196F0 // 48 8B 05 ? ? ? ? ? ? ? 4D 39 C8 75 ? 48 83 C1
+		// unchanged since 6.2
 		uint32_t parentToken = *(uint32_t*)((uintptr_t)klass + 0xA4); // 41 8B 87 ? ? ? ? 41 BF 00 00 00 00
 		if (!parentToken) return nullptr;
 		return (Il2CppClass*)(**(uintptr_t**)(Config::GameBase + METADATA_BASE_POINTER) + parentToken);
@@ -118,7 +100,7 @@ namespace Il2Cpp {
 
 	Il2CppType* GetClassType(Il2CppClass* klass) {
 		// 48 83 C6 ? 48 8D 7D ? 48 89 F9
-		return (Il2CppType*)((uintptr_t)klass + 0x70);
+		return (Il2CppType*)((uintptr_t)klass + 0x48);
 	}
 
 	int16_t GetClassGenericContainerIndex(Il2CppClass* klass) {
@@ -133,20 +115,23 @@ namespace Il2Cpp {
 		}*/
 
 	int16_t GetMethodSlot(MethodInfo* method) {
+		// unchanged since 6.2
 		// 48 C7 40 ? 00 00 00 00 ? ? ? 66 C7 40
 		return *(int16_t*)((uintptr_t)method + 0x28);
 	}
 
 	uint16_t GetMethodFlags(MethodInfo* method) {
-		return *(uint16_t*)((uintptr_t)method + 0x2A);
+		// 0F B7 43 ? 89 C1
+		return *(uint16_t*)((uintptr_t)method + 0x2C);
 	}
 
 	bool GetMethodIsGenric(MethodInfo* method) {
 		// 41 F6 46 ? ? 0F 84 ? ? ? ? 48 89 D7
-		return ((*(uint8_t*)(method + 0x2F) & 0x10) != 0);
+		return ((*(uint8_t*)(method + 0x2F) & 8) != 0);
 	}
 
 	uintptr_t GetMethodPointer(MethodInfo* method) {
+		// unchanged since 6.2
 		// 48 83 78 ? 00 74 ? 48 83 C4 ? 5E 5D
 		// i think this is better: FF 50 ? 48 8B 4C 24 ? 48 89 FA
 		return *(uintptr_t*)((uintptr_t)method + 0x8);
@@ -176,5 +161,62 @@ namespace Il2Cpp {
 
 		g_cached_types[type] = result;
 		return result;
+	}
+
+	static size_t GetIl2CppTypeSize(const Il2CppType* type)
+	{
+		if (!type) return 0;
+
+		switch (type->type)
+		{
+		case IL2CPP_TYPE_BOOLEAN: return 1;
+		case IL2CPP_TYPE_I1: case IL2CPP_TYPE_U1: return 1;
+		case IL2CPP_TYPE_I2: case IL2CPP_TYPE_U2: return 2;
+		case IL2CPP_TYPE_CHAR: return 2;
+		case IL2CPP_TYPE_I4: case IL2CPP_TYPE_U4: case IL2CPP_TYPE_R4: return 4;
+		case IL2CPP_TYPE_I8: case IL2CPP_TYPE_U8: case IL2CPP_TYPE_R8: return 8;
+		case IL2CPP_TYPE_PTR: case IL2CPP_TYPE_CLASS: case IL2CPP_TYPE_STRING:
+		case IL2CPP_TYPE_OBJECT: case IL2CPP_TYPE_SZARRAY: case IL2CPP_TYPE_ARRAY:
+			return sizeof(void*);
+		default:
+			break;
+		}
+		if (type->type == IL2CPP_TYPE_VALUETYPE)
+		{
+			Il2CppClass* klass = Il2Cpp::class_from_type(type);
+			if (!klass) return 0;
+
+			size_t valSize = Il2Cpp::GetClassSize(klass);
+
+			if (valSize > 0) return valSize;
+		}
+
+		return 0;
+	}
+
+	bool MethodHasReturnBuffer(MethodInfo* method)
+	{
+		Il2CppType* ret = Il2Cpp::method_get_return_type(method);
+		if (!ret) return false;
+
+		Il2CppClass* cls = Il2Cpp::class_from_type(ret);
+		if (!cls) return false;
+
+		// F6 41 ? ? 0F 85 ? ? ? ? 4C 89 C3
+		//bool byref = ((*(uint8_t*)((uint8_t*)ret + 0xB) & 0x40) != 0);
+
+		if (ret->type != IL2CPP_TYPE_VALUETYPE)
+			return false;
+
+		Il2CppClass* parentClass = Il2Cpp::GetClassParent(cls);
+
+		if (strcmp(Il2Cpp::class_get_name(parentClass), "Enum") == 0 && strcmp(Il2Cpp::class_get_namespace(parentClass), "System") == 0)
+			return false;
+
+		size_t size = GetIl2CppTypeSize(ret);
+		if (size == 0)
+			return false;
+
+		return size > 8;
 	}
 }

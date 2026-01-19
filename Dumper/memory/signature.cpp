@@ -1,5 +1,5 @@
 #include "signature.h"
-#include <logger/logger.h>
+#include "../utils.h"
 
 #include <Windows.h>
 #include <emmintrin.h>
@@ -16,59 +16,36 @@ namespace Mem {
 		bool Valid() const { return base && size; }
 	};
 
-	static inline bool IsCodeSection(const IMAGE_SECTION_HEADER& s) {
-		// executable code only
-		if (!(s.Characteristics & IMAGE_SCN_MEM_EXECUTE))
-			return false;
-
-		// optional name filtering
-		if (strcmp((char*)s.Name, ".text") == 0)
-			return true;
-
-		if (strcmp((char*)s.Name, "il2cpp") == 0)
-			return true;
-
-		return false;
-	}
-
-	static std::vector<Section> GetExecutableSections(HMODULE module)
+	Section GetTextSection(HMODULE module)
 	{
-		std::vector<Section> out;
-
 		if (!module)
-			return out;
+			return {};
 
 		auto dos = (PIMAGE_DOS_HEADER)module;
 		if (dos->e_magic != IMAGE_DOS_SIGNATURE)
-			return out;
+			return {};
 
 		auto nt = (PIMAGE_NT_HEADERS)(
 			(uint8_t*)module + dos->e_lfanew);
 
 		if (nt->Signature != IMAGE_NT_SIGNATURE)
-			return out;
+			return {};
 
 		auto section = IMAGE_FIRST_SECTION(nt);
 
 		for (WORD i = 0; i < nt->FileHeader.NumberOfSections; ++i, ++section) {
-			if (!IsCodeSection(*section))
-				continue;
-
-			size_t size =
-				section->Misc.VirtualSize
-				? section->Misc.VirtualSize
-				: section->SizeOfRawData;
-
-			if (!size)
-				continue;
-
-			out.push_back({
-				(uint8_t*)module + section->VirtualAddress,
-				size
-				});
+			//printf("section->Name: %s\n", section->Name);
+			if (strcmp((char*)section->Name, ".text") == 0) {
+				return {
+					(uint8_t*)module + section->VirtualAddress,
+					section->Misc.VirtualSize
+						? section->Misc.VirtualSize
+						: section->SizeOfRawData
+				};
+			}
 		}
 
-		return out;
+		return {};
 	}
 
 
@@ -109,9 +86,19 @@ namespace Mem {
 		return _mm_movemask_epi8(r) == _mm_movemask_epi8(mask);
 	}
 
-	void* Signature::ScanRange(const uint8_t* base, size_t size) const {
-		if (!Valid() || !base || size < m_bytes.size())
+	void* Signature::Scan(const uint8_t* base, size_t size) const {
+		if (!Valid())
 			return nullptr;
+
+		if (!base || size < m_bytes.size()) {
+			HMODULE game = GetModuleHandleW(nullptr); // main exe
+			Section text = GetTextSection(game);
+			if (!text.Valid())
+				return nullptr;
+
+			base = text.base;
+			size = text.size;
+		}
 
 		const size_t len = m_bytes.size();
 		const size_t simd = std::min<size_t>(16, len);
@@ -150,27 +137,8 @@ namespace Mem {
 				return (void*)(base + i);
 		}
 
-		return nullptr;
-	}
+		Utils::Log("Didn't find signature '%s'\n", m_pattern.c_str());
 
-	void* Signature::Scan(const uint8_t* base, size_t size) const {
-		// explicit range: scan exactly what caller asked
-		if (base && size)
-			return ScanRange(base, size);
-
-		// otherwise scan all executable sections
-		HMODULE game = GetModuleHandleW(nullptr);
-		auto sections = GetExecutableSections(game);
-
-		for (const auto& sec : sections) {
-			if (!sec.Valid())
-				continue;
-
-			if (void* hit = ScanRange(sec.base, sec.size))
-				return hit;
-		}
-
-		Log("Didn't find signature '%s'\n", m_pattern.c_str());
 		return nullptr;
 	}
 
