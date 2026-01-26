@@ -7,7 +7,8 @@
 uintptr_t Config::GameBase = 0;
 bool Config::BlockPackets = true;
 
-namespace Il2Cpp {
+namespace Il2Cpp
+{
 	// Definition of function pointers
 	MethodInfo* (*class_get_methods)(Il2CppClass* klass, void** iter) = nullptr;
 	const char* (*class_get_name)(Il2CppClass* klass) = nullptr;
@@ -84,15 +85,13 @@ namespace Il2Cpp {
 		return *(Il2CppGenericClass**)((uintptr_t)klass + 0x88);
 	}
 
-	Il2CppGenericContext* GetGenericContext(Il2CppGenericClass* genericClass)
-	{
+	Il2CppGenericContext* GetGenericContext(Il2CppGenericClass* genericClass) {
 		// In InitLocked 
 		// 48 83 45 ? ? 31 F6
 		return (Il2CppGenericContext*)((uintptr_t)genericClass + 0x8);
 	}
 
-	Il2CppGenericInst* GenericContextGetClassInst(Il2CppGenericContext* genericContext)
-	{
+	Il2CppGenericInst* GenericContextGetClassInst(Il2CppGenericContext* genericContext) {
 		// In Object::Box
 		// E8 ? ? ? ? 48 89 C7 F6 80 ? ? ? ? ? 75 ? 48 8D 05 ? ? ? ? 48 89 45 ? 48 8B 0D ? ? ? ? FF 15 ? ? ? ? 48 8D 55 ? 48 89 F9 E8 ? ? ? ? 48 8B 45 ? ? ? ? FF 15 ? ? ? ? 0F B7 87
 		return *(Il2CppGenericInst**)(genericContext);
@@ -104,15 +103,11 @@ namespace Il2Cpp {
 	}
 
 	int16_t GetClassGenericContainerIndex(Il2CppClass* klass) {
+		// search for "The number of generic arguments provided doesn't equal the arity of the generic type definition."
 		// if (cls->genericContainerIndex) continue;
-		// v16 = *(__int16*)(*(_QWORD*)(v46 + 0x90) + 0x36LL) ^ 0xFFFF8DC0;
-		return *(int16_t*)((uintptr_t)klass + 0x36) ^ 0xFFFF8DC0;
+		// v17 = (unsigned int)(__int16)(*(_WORD*)(*(_QWORD*)(v49 + 0x40) + 0x3ELL) - 0x2A41);
+		return *(int16_t*)((uintptr_t)klass + 0x3E) - 0x2A41;
 	}
-
-	/*	uint8_t GetMethodParamCount(MethodInfo* method) {
-			// E8 ? ? ? ? 3B C5 75
-			return *(uint8_t*)((uintptr_t)method + 0x2E);
-		}*/
 
 	int16_t GetMethodSlot(MethodInfo* method) {
 		// unchanged since 6.2
@@ -163,12 +158,10 @@ namespace Il2Cpp {
 		return result;
 	}
 
-	static size_t GetIl2CppTypeSize(const Il2CppType* type)
-	{
+	static size_t GetIl2CppTypeSize(const Il2CppType* type) {
 		if (!type) return 0;
 
-		switch (type->type)
-		{
+		switch (type->type) {
 		case IL2CPP_TYPE_BOOLEAN: return 1;
 		case IL2CPP_TYPE_I1: case IL2CPP_TYPE_U1: return 1;
 		case IL2CPP_TYPE_I2: case IL2CPP_TYPE_U2: return 2;
@@ -181,8 +174,7 @@ namespace Il2Cpp {
 		default:
 			break;
 		}
-		if (type->type == IL2CPP_TYPE_VALUETYPE)
-		{
+		if (type->type == IL2CPP_TYPE_VALUETYPE) {
 			Il2CppClass* klass = Il2Cpp::class_from_type(type);
 			if (!klass) return 0;
 
@@ -194,8 +186,7 @@ namespace Il2Cpp {
 		return 0;
 	}
 
-	bool MethodHasReturnBuffer(MethodInfo* method)
-	{
+	bool MethodHasReturnBuffer(MethodInfo* method) {
 		Il2CppType* ret = Il2Cpp::method_get_return_type(method);
 		if (!ret) return false;
 

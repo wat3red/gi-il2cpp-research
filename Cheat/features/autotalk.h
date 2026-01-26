@@ -1,7 +1,8 @@
 #pragma once
 #include "feature.h"
 
-namespace features {
+namespace features
+{
 	class Autotalk : public Feature {
 	public:
 		void DrawUI() override;

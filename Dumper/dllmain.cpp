@@ -158,8 +158,6 @@ public:
 };
 NetworkBlocker* g_blocker = nullptr;
 
-
-
 DWORD WINAPI StartThread(LPVOID) {
 	Utils::CreateConsole();
 	Utils::DisableLogReport();
@@ -188,8 +186,8 @@ DWORD WINAPI StartThread(LPVOID) {
 
 	// Choose what to dump here
 	Dumper::DumpFull();
-	/*Dumper::GenerateSDK();*/
-	/*Dumper::DumpForIDA();*/
+	//Dumper::GenerateSDK();
+	//Dumper::DumpForIDA();
 
 	return 0;
 }

@@ -230,7 +230,7 @@ namespace dx_hook {
 		MH_CreateHook((LPVOID)foundPIC, hk_PresentImplCore, (LPVOID*)&o_PresentImplCore);
 		MH_EnableHook((LPVOID)foundPIC);
 
-		printf(("[+] Hooked present at 0x%X\n"), foundPIC);
+		printf(("Hooked present at 0x%X\n"), foundPIC);
 
 		while (!gswc) {
 			Sleep(100);

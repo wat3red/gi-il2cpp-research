@@ -31,10 +31,6 @@ Camera* Camera::GetMain()
 
 Vector3 Camera::WorldToViewportPoint(Vector3 position)
 {
-	/*Vector3 ret{};
-	Il2Cpp::Method::Call<Vector3>("UnityEngine", "Camera", "WorldToViewportPoint", 1, &ret, this, position);
-	return ret;*/
-
 	return Il2Cpp::Method::Call<Vector3>("UnityEngine", "Camera", "WorldToViewportPoint", 1, this, position);
 }
 

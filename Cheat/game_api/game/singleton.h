@@ -1,6 +1,6 @@
 #pragma once
+
 #include "../unity/unity_objects.h"
-#include "molemole_types.h"
 
 namespace MoleMole {
 

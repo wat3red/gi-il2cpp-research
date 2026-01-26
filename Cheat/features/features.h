@@ -3,7 +3,9 @@
 
 #include <vector>
 
-namespace features {
+
+namespace features
+{
 	void InitAllFeatures();
 	void UpdateAllFeatures();
 	void DrawAllUI();

@@ -5,8 +5,7 @@
 #include <windows.h>	
 #include <unordered_map>	
 
-struct AssemblyVector
-{
+struct AssemblyVector {
 	Il2CppAssembly** begin;
 	Il2CppAssembly** end;
 	Il2CppAssembly** cap;
@@ -19,8 +18,7 @@ Il2CppAssembly** il2cpp_domain_get_assemblies(size_t* size) {
 	return vec->begin;
 }
 
-Il2CppClass* Il2Cpp::Class::FromName(const char* namespaceName, const char* className)
-{
+Il2CppClass* Il2Cpp::Class::FromName(const char* namespaceName, const char* className) {
 	struct ClassKey {
 		std::string ns;
 		std::string name;
@@ -48,8 +46,7 @@ Il2CppClass* Il2Cpp::Class::FromName(const char* namespaceName, const char* clas
 	size_t asmCount = 0;
 	Il2CppAssembly** assemblies = il2cpp_domain_get_assemblies(&asmCount);
 
-	for (size_t i = 0; i < asmCount; ++i)
-	{
+	for (size_t i = 0; i < asmCount; ++i) {
 		Il2CppAssembly* asmbl = assemblies[i];
 		if (!asmbl)
 			continue;
@@ -159,25 +156,27 @@ void* Il2Cpp::Method::GetMethodPointer(MethodInfo* method) {
 	return nullptr;
 }*/
 
-MethodInfo* Il2Cpp::Method::Find(Il2CppClass* klass, const char* method_name, int param_count)
-{
+MethodInfo* Il2Cpp::Method::Find(Il2CppClass* klass, const char* method_name, int param_count) {
+	//Log("Il2Cpp::Method::Find: starting to search for method %s, klass = %p, param_count = %d\n", method_name, klass, param_count);
+
 	void* iter = nullptr;
 	while (MethodInfo* method = il2cpp_class_get_methods(klass, &iter)) {
+		//Log("iterating over method %s with param_count = %d, RVA = 0x%X\n", il2cpp_method_get_name(method), il2cpp_method_get_param_count(method), (uintptr_t)GetMethodPointer(method) - g_game_base);
+
 		if ((strcmp(method_name, il2cpp_method_get_name(method)) == 0) &&
 			(il2cpp_method_get_param_count(method) == param_count)) {
-			Log("Il2Cpp::Method::Find: found method %s.%s.%s at 0x%X\n", il2cpp_class_get_namespace(klass), il2cpp_class_get_name(klass), method_name, method);
+			//Log("Il2Cpp::Method::Find: found method %s.%s.%s at 0x%X\n", il2cpp_class_get_namespace(klass), il2cpp_class_get_name(klass), method_name, method);
 
 			return method;
 		}
 	}
 
-	Log("Il2Cpp::Method::Find: didn't find method %s.%s.%s\n", il2cpp_class_get_namespace(klass), il2cpp_class_get_name(klass), method_name);
+	//Log("Il2Cpp::Method::Find: didn't find method %s.%s.%s\n", il2cpp_class_get_namespace(klass), il2cpp_class_get_name(klass), method_name);
 
 	return nullptr;
 }
 
-MethodInfo* Il2Cpp::Method::Find(const char* namespace_name, const char* class_name, const char* method_name, int param_count)
-{
+MethodInfo* Il2Cpp::Method::Find(const char* namespace_name, const char* class_name, const char* method_name, int param_count) {
 	Il2CppClass* klass = Il2Cpp::Class::FromName(namespace_name, class_name);
 	if (!klass) return nullptr;
 
@@ -185,7 +184,20 @@ MethodInfo* Il2Cpp::Method::Find(const char* namespace_name, const char* class_n
 	return method;
 }
 
-FieldInfo* Il2Cpp::Field::Find(Il2CppClass* klass, const char* fieldName)
-{
+int32_t Il2Cpp::Field::GetOffset(Il2CppClass* klass, const char* fieldName) {
+	FieldInfo* fieldInfo = Il2Cpp::Field::Find(klass, fieldName);
+
+	if (fieldInfo)
+		return Il2Cpp::Field::GetOffset(fieldInfo);
+
+	Log("Il2Cpp::Field::GetOffset: didn't find %s in %s", fieldName, il2cpp_class_get_name(klass));
+	return -1;
+}
+
+int32_t Il2Cpp::Field::GetOffset(FieldInfo* field) {
+	return il2cpp_field_get_offset(field);
+}
+
+FieldInfo* Il2Cpp::Field::Find(Il2CppClass* klass, const char* fieldName) {
 	return il2cpp_class_get_field_from_name(klass, fieldName);
 }

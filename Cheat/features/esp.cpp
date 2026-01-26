@@ -28,7 +28,8 @@ const char* GetEntityTypeName(int32_t type) {
 	}
 }
 
-namespace features {
+namespace features
+{
 
 	struct ESPItem {
 		MoleMole::BaseEntity* entity;
@@ -154,49 +155,49 @@ namespace features {
 		Unity::Camera* camera = Unity::Camera::GetMain();
 		if (!camera) return;
 
-		Log("%d\n", __LINE__);
+		//Log("%d\n", __LINE__);
 
 		Unity::Transform* cameraTransform = camera->GetTransform();
 		if (!cameraTransform) return;
 
-		Log("%d\n", __LINE__);
+		//Log("%d\n", __LINE__);
 
 		Unity::Vector3 cameraPos = cameraTransform->GetPosition();
 		auto viewport = ImGui::GetMainViewport();
 
-		Log("%d\n", __LINE__);
+		//Log("%d\n", __LINE__);
 
 		// Create a TEMPORARY list. We work on this so we don't disturb the drawing thread.
 		std::vector<ESPItem> temp_list;
 		std::vector<MoleMole::BaseEntity*> entities = entity_manager->GetEntities();
 
-		Log("entities.size: %d\n", entities.size());
+		//Log("entities.size: %d\n", entities.size());
 
 		for (auto* entity : entities) {
 			if (!entity) continue;
 
 			int32_t type = (int32_t)entity->GetType();
-			Log("%d\n", __LINE__);
+			//Log("%d\n", __LINE__);
 
 			// Filter Check (Uncommented and fixed)
 			auto it = config.esp.filters.find(type);
 			if (it == config.esp.filters.end() || !it->second) {
 				continue;
 			}
-			Log("%d\n", __LINE__);
+			//Log("%d\n", __LINE__);
 
 			Unity::GameObject* go = entity->GetGameObject();
 			if (!go) continue;
 
 			Unity::Transform* transform = go->GetTransform();
 			if (!transform) continue;
-			Log("%d\n", __LINE__);
+			//Log("%d\n", __LINE__);
 
 			Unity::Vector3 pos = transform->GetPosition();
 			float dist = cameraPos.Distance(pos);
 
 			if (dist > config.esp.maxDistance) continue;
-			Log("%d\n", __LINE__);
+			//Log("%d\n", __LINE__);
 
 			Unity::Bounds bounds = StageManager_GetBounds(go);
 			Unity::Vector3 center = bounds.center;
@@ -240,13 +241,13 @@ namespace features {
 			item.distance = dist;
 			item.top = ImVec2((minX + maxX) * 0.5f, minY);
 			item.bottom = ImVec2((minX + maxX) * 0.5f, maxY);
-			Log("%d\n", __LINE__);
+			//Log("%d\n", __LINE__);
 
 			// Safe name retrieval
 			auto* namePtr = entity->GetName();
 			if (namePtr) item.name = namePtr->ToCStr();
 			if (item.name.empty()) item.name = GetEntityTypeName(type);
-			Log("%d\n", __LINE__);
+			//Log("%d\n", __LINE__);
 
 			// Push to local list (fast, no locking needed yet)
 			temp_list.push_back(item);

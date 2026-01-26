@@ -98,5 +98,8 @@
     <ClInclude Include="memory\signature.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="dump_for_ida.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

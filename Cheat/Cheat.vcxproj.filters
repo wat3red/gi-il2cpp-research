@@ -147,6 +147,15 @@
     <ClInclude Include="game_api\memory\signature.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="game_api\version_constants.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="game_api\game\map.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="game_api\game\player.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -240,6 +249,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="game_api\memory\signature.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="game_api\game\map.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="game_api\game\player.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

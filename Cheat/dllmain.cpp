@@ -136,6 +136,7 @@ DWORD WINAPI StartThread(LPVOID)
 	DisableLogReport();
 
 	g_game_base = (uintptr_t)GetModuleHandle(NULL);
+
 	Log("Game Base: 0x%p\n", (void*)g_game_base);
 
 	std::thread block_packets_thread(([]() { Sleep(11'000); g_block_packets = false; }));
@@ -154,40 +155,6 @@ DWORD WINAPI StartThread(LPVOID)
 	return 0;
 }
 
-
-//
-//#include <windows.h>
-//#include <tlhelp32.h>
-//#include <string>
-//
-//// Returns PID of the first process matching processName, or 0 if not found
-//DWORD FindProcessByName(const std::wstring& processName)
-//{
-//	DWORD pid = 0;
-//
-//	HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-//	if (snapshot == INVALID_HANDLE_VALUE)
-//		return 0;
-//
-//	PROCESSENTRY32W pe;
-//	pe.dwSize = sizeof(pe);
-//
-//	if (Process32FirstW(snapshot, &pe))
-//	{
-//		do
-//		{
-//			if (_wcsicmp(pe.szExeFile, processName.c_str()) == 0)
-//			{
-//				pid = pe.th32ProcessID;
-//				break;
-//			}
-//		} while (Process32NextW(snapshot, &pe));
-//	}
-//
-//	CloseHandle(snapshot);
-//	return pid;
-//}
-//
 #include <iphlpapi.h>
 #include <vector>
 #include <ws2tcpip.h>

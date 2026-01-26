@@ -144,6 +144,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
+    <ClInclude Include="dump_for_ida.h" />
     <ClCompile Include="hooks.cpp" />
     <ClCompile Include="il2cpp_bridge.cpp" />
     <ClCompile Include="lib\minhook\src\buffer.c" />

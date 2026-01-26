@@ -1743,11 +1743,7 @@ typedef struct Il2CppReflectionAssembly Il2CppReflectionAssembly;
 typedef Il2CppClass Il2CppVTable;
 typedef struct Il2CppObject
 {
-	union
-	{
-		Il2CppClass* klass;
-		Il2CppVTable* vtable;
-	} Il2CppClass;
+	Il2CppClass* klass;
 	MonitorData* monitor;
 } Il2CppObject;
 typedef int32_t il2cpp_array_lower_bound_t;

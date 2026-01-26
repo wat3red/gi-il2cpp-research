@@ -1,5 +1,6 @@
 #include "esp.h"
 #include "autotalk.h"
+#include "map_teleport.h"
 
 #include "features.h"
 #include <game_api/include.h>
@@ -7,12 +8,13 @@
 #include <minhook/include/MinHook.h>
 
 bool features::is_initialized = false;
+void* MiHoYo_SDK_Dll_instance = nullptr;
 std::vector<Feature*> features::all_features = {};
 
 void (*MiHoYo_SDK_Dll_Update)(void* _this);
 void hMiHoYo_SDK_Dll_Update(void* _this) {
 	features::UpdateAllFeatures();
-
+	MiHoYo_SDK_Dll_instance = _this;
 	MiHoYo_SDK_Dll_Update(_this);
 }
 
@@ -23,7 +25,8 @@ void features::InitAllFeatures() {
 	MH_CreateHook(MiHoYo_SDK_Dll_Update_ptr, (LPVOID)hMiHoYo_SDK_Dll_Update, (LPVOID*)&MiHoYo_SDK_Dll_Update);
 
 	all_features.push_back(new ESP());
-	//all_features.push_back(new Autotalk());
+	all_features.push_back(new Autotalk());
+	all_features.push_back(new MapTeleport());
 
 	for (Feature* feature : all_features) {
 		feature->OnInit();

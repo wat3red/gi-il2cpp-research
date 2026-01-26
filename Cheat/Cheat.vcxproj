@@ -160,7 +160,9 @@
     <ClInclude Include="features\features.h" />
     <ClInclude Include="features\map_teleport.h" />
     <ClInclude Include="game_api\game\entities.h" />
+    <ClInclude Include="game_api\game\map.h" />
     <ClInclude Include="game_api\game\molemole_types.h" />
+    <ClInclude Include="game_api\game\player.h" />
     <ClInclude Include="game_api\game\singleton.h" />
     <ClInclude Include="game_api\internal_include.h" />
     <ClInclude Include="game_api\memory\signature.h" />
@@ -204,10 +206,13 @@
     <ClCompile Include="features\features.cpp" />
     <ClCompile Include="features\map_teleport.cpp" />
     <ClCompile Include="game_api\game\entities.cpp" />
+    <ClCompile Include="game_api\game\map.cpp" />
+    <ClCompile Include="game_api\game\player.cpp" />
     <ClCompile Include="game_api\game\singleton.cpp" />
     <ClCompile Include="game_api\il2cpp\il2cpp_types.cpp" />
     <ClCompile Include="game_api\memory\signature.cpp" />
     <ClCompile Include="game_api\unity\unity_objects.cpp" />
+    <ClInclude Include="game_api\version_constants.h" />
     <ClCompile Include="gui\gui.cpp" />
     <ClCompile Include="gui\menu.cpp" />
     <ClCompile Include="external\imgui\backends\imgui_impl_dx11.cpp" />

@@ -4,19 +4,22 @@
 
 #include <vector>
 
-namespace MoleMole {
+namespace MoleMole
+{
+	struct BaseEntity {
+		Unity::GameObject* GetGameObject();
+		EntityType GetType();
+		Il2CppString* GetName();
+	};
 
-    class BaseEntity {
-    public:
-        Unity::GameObject* GetGameObject();
-        EntityType GetType();
-        Il2CppString* GetName();
-    };
+	struct AvatarEntity : BaseEntity {
 
-    class EntityManager {
-    public:
-        static EntityManager* Instance();
-        std::vector<BaseEntity*> GetEntities();
-    };
+	};
+
+	struct EntityManager {
+		static EntityManager* Instance();
+		std::vector<BaseEntity*> GetEntities();
+		AvatarEntity* GetAvatar();
+	};
 
 }
