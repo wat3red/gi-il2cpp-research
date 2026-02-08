@@ -10,6 +10,7 @@ namespace features
 	void UpdateAllFeatures();
 	void DrawAllUI();
 	void DrawAllBackgroundUI();
+	void UpdateAllHotkeys();
 
 	extern bool is_initialized;
 	extern std::vector<Feature*> all_features;

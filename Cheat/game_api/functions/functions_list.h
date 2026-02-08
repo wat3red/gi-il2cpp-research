@@ -1,5 +1,13 @@
 //public virtual Void ClosePage();
-RESOLVE_BY_XREF_SIGNATURE(void, BasePageContext_ClosePage, "E8 ? ? ? ? E9 ? ? ? ? 66 0F EF F6", (void* _this))
+
+
+RESOLVE_BY_OFFSET(void, VCAnimatorMove_AddVelocity, 0x7B6BD60, (void* _this, int32_t velocityType, Unity::Vector3 velocity, float time, float stopVelocity, bool forceSet, float some_float))
+
+// private void [A-Z]{11}\(\); // RVA: 0x7
+RESOLVE_BY_OFFSET(void, VCAnimatorMove_DrownWater, 0x7B6C110, (void* _this))
+
+RESOLVE_BY_XREF_SIGNATURE(void, NullReferenceException, "E8 ? ? ? ? 83 FB ? 7F ? 48 8D 74 24", ())
+RESOLVE_BY_SIGNATURE(void, BasePageContext_ClosePage, "56 48 83 EC ? 48 89 CE 80 3D ? ? ? ? 00 48 8B 05 ? ? ? ? 75 ? 48 8B 80 ? ? ? ? 48 85 C0 74 ? 48 8B 56", (void* _this))
 
 //public static Single CalcCurrentGroundHeight(Single x, Single z);
 //RESOLVE_BY_OFFSET(float, Miscs_CalcCurrentGroundHeight, 0xF4A9EB0, (float x, float z))
@@ -23,7 +31,7 @@ RESOLVE_BY_XREF_SIGNATURE(void, BasePageContext_ClosePage, "E8 ? ? ? ? E9 ? ? ? 
 // public static SingletonManager get_Instance(); 
 //RESOLVE_BY_OFFSET(MoleMole::SingletonManager*, SingletonManager_get_Instance, 0x5CA0B60, ())
 
-RESOLVE_BY_XREF_SIGNATURE(void, HDIKLPILBAC_CFDHCLDPCHI, "E8 ? ? ? ? 48 89 F1 E8 ? ? ? ? 80 BE ? ? ? ? 00 0F 84 ? ? ? ? 80 BE ? ? ? ? 00 74", (void* _this))
+RESOLVE_BY_XREF_SIGNATURE(void, InLevelCutScenePageContext_OnFreeClick, "E8 ? ? ? ? 48 89 F1 E8 ? ? ? ? 80 BE ? ? ? ? 00 0F 84 ? ? ? ? 80 BE ? ? ? ? 00 74", (void* _this))
 
 //public Void OnSelectItem(); 
 //RESOLVE_BY_OFFSET(void, MonoSelectItem_OnSelectItem, 0xCE1C190, (void* _this))
@@ -54,25 +62,34 @@ RESOLVE_BY_XREF_SIGNATURE(Unity::Bounds, StageManager_GetBounds, "E8 ? ? ? ? 48 
 //public static Camera get_main(); // FLAGS: 0x896
 //RESOLVE_BY_OFFSET(Unity::Camera*, Camera_get_main, 0x14F1E800, ())
 
+
+// 	private void [A-Z]{11}\([A-Z]{11} [A-Z]{11}\)
+// public void [A-Z]{11}\(uint63 [A-Z]{11}\)
+
+
 //class: private MonoInLevelMusicPage <
 //firstly find EntityManager class name, than search for methods returning that class 
 //private static [A-Z]{11} [A-Z]{11}\(\);
 //RESOLVE_BY_OFFSET(MoleMole::PlayerModule*, InLevelDrumPageContext_get_PLAYER, 0x92B01B0, ()) // "private static MonoUIWaterMask"
 //RESOLVE_BY_OFFSET(MoleMole::EntityManager*, InLevelDrumPageContext_get_ENTITY, 0x92B1B00, ()) // "private Queue<Dictionary<UInt32,Int32>>"
 
-//RESOLVE_BY_SIGNATURE(void, BaseEntity_SetAbsolutePosition, "56 57 55 53 48 83 EC ? 44 89 C5 48 89 D7 48 89 CE 80 3D ? ? ? ? 00 75 ? 8B 47", (MoleMole::BaseEntity* _this, Unity::Vector3 position, bool forceSyncToRigidbody))
+RESOLVE_BY_SIGNATURE(void, BaseEntity_SetAbsolutePosition, "56 57 55 53 48 83 EC ? 44 89 C5 48 89 D7 48 89 CE 80 3D ? ? ? ? 00 75 ? 8B 47", (MoleMole::BaseEntity* _this, Unity::Vector3 position, bool forceSyncToRigidbody))
 
-RESOLVE_BY_SIGNATURE(void, LoadingManager_RequestSceneTransToPoint, "41 56 56 57 55 53 48 83 EC ? 4C 89 CF 45 89 C6 89 D3 48 89 CE 80 3D ? ? ? ? 00 0F 84 ? ? ? ? 80 3D ? ? ? ? 00 0F 85 ? ? ? ? 80 3D ? ? ? ? 00", (MoleMole::LoadingManager* _this, uint32_t sceneId, uint32_t pointId, void* finishCallBackInForceDrag))
+//RESOLVE_BY_SIGNATURE(void, LoadingManager_RequestSceneTransToPoint, "41 56 56 57 55 53 48 83 EC ? 4C 89 CF 45 89 C6 89 D3 48 89 CE 80 3D ? ? ? ? 00 0F 84 ? ? ? ? 80 3D ? ? ? ? 00 0F 85 ? ? ? ? 80 3D ? ? ? ? 00", (MoleMole::LoadingManager* _this, uint32_t sceneId, uint32_t pointId, void* finishCallBackInForceDrag))
 
 //class: private Queue<Dictionary<UInt32,Int32>>
-// 0xE42C660, 0xE42FD90, 0xE437590
 //public List<[A-Z]{11}> [A-Z]{11}\(\);
 RESOLVE_BY_OFFSET(Unity::List<MoleMole::BaseEntity*>*, EntityManager_GetEntities, 0xE42FD90, (MoleMole::EntityManager* _this))
 //public List<[A-Z]{11}> [A-Z]{11}\(\);
 RESOLVE_BY_XREF_SIGNATURE(Unity::List<MoleMole::BaseEntity*>*, EntityManager_GetAllTeams, "E8 ? ? ? ? 48 85 C0 0F 84 ? ? ? ? 48 89 C7 44 8B 78 ? 48 8D 75", (MoleMole::EntityManager* _this))
+RESOLVE_BY_OFFSET(MoleMole::BaseEntity*, EntityManager_GetValidEntity, 0xE422170, (MoleMole::EntityManager* _this, uint32_t runtimeID))
+
+
+RESOLVE_BY_SIGNATURE(void, Packet_XorEncrypt, "41 56 56 57 55 53 48 83 EC ? 89 D5 49 89 CE 80 3D ? ? ? ? 00 0F 85 ? ? ? ? 48 8B 0D ? ? ? ? 80 B9 ? ? ? ? 00", (Unity::Array<uint8_t>** bytes, int32_t length))
 
 // should be moved to signature
-RESOLVE_BY_OFFSET(MoleMole::AvatarEntity*, EntityManager_GetLocalAvatarEntity, 0xE425B00, (MoleMole::EntityManager* _this)) // 0xE423A90
+//	public OBEOOPGNGLK [A-Z]{11}\(\)
+RESOLVE_BY_OFFSET(MoleMole::AvatarEntity*, EntityManager_GetLocalAvatarEntity, 0xE4217E0, (MoleMole::EntityManager* _this)) // 0xE423A90 hero or smth
 
 RESOLVE_BY_SIGNATURE(MoleMole::BaseActor*, ActorManager_GetActor, "41 57 41 56 41 54 56 57 53 48 81 EC ? ? ? ? 48 89 D6 48 89 C8", (MoleMole::ActorManager* _this, MoleMole::BaseEntity* tarEntity))
 
@@ -80,9 +97,17 @@ RESOLVE_BY_SIGNATURE(MoleMole::BaseActor*, ActorManager_GetActor, "41 57 41 56 4
 //public GameObject [A-Z]{11}\(\);
 RESOLVE_BY_OFFSET(Unity::GameObject*, BaseEntity_get_gameObject, 0x87D5680, (MoleMole::BaseEntity* _this)) // 0x87D61E0
 RESOLVE_BY_XREF_SIGNATURE(Il2CppString*, BaseEntity_GetName, "E8 ? ? ? ? 49 89 C4 8B AE ? ? ? ? 48 8B 8F", (MoleMole::BaseEntity* _this))
+// either LDNKEIDHNKG 0x87AED00, or FGALPACPMOK 0x87DD860 
+// 0x87AED00 is likely absolute pos or smth
+RESOLVE_BY_OFFSET(Unity::Vector3, BaseEntity_GetRelativePosition, 0x87DD860, (MoleMole::BaseEntity* _this))
+RESOLVE_BY_OFFSET(Unity::Vector3, BaseEntity_GetAbsolutePosition, 0x87AED00, (MoleMole::BaseEntity* _this))
+RESOLVE_BY_XREF_SIGNATURE(Unity::Rigidbody*, BaseEntity_GetRigidbody, "E8 ? ? ? ? 48 85 C0 0F 84 ? ? ? ? 48 83 78 ? 00 48 8B 57", (MoleMole::BaseEntity* _this))
 
 
-
+// MoleMole.ItemModule can be found using "private void [A-Z]{11}\([A-Z]{11} [A-Z]{11}, bool& [A-Z]{11}\)"
+// MoleMole.ItemModule = BFJBDCPBINB
+// public void [A-Z]{11}\(uint32 [A-Z]{11}\)
+RESOLVE_BY_SIGNATURE(void, ItemModule_PickItem, "56 57 53 48 83 EC ? 89 D6 48 89 CF 80 3D ? ? ? ? 00 48 8B 05 ? ? ? ? 75 ? 48 8B 88 ? ? ? ? 31 DB", (MoleMole::ItemModule* _this, uint32_t entityID))
 
 
 //public static IntPtr StringToHGlobalAnsi(String s);
@@ -109,4 +134,4 @@ RESOLVE_BY_XREF_SIGNATURE(uint8_t, il2cpp_method_get_param_count, "E8 ? ? ? ? 3B
 RESOLVE_BY_XREF_SIGNATURE(Il2CppImage*, il2cpp_assembly_get_image, "E8 ? ? ? ? 48 8B C8 EB ? 33 C9 ? ? ? ? ? ? ? 48 85 C9", (Il2CppAssembly* assembly));
 RESOLVE_BY_XREF_SIGNATURE(Il2CppClass*, il2cpp_class_from_name, "E8 ? ? ? ? 48 83 C4 ? 48 89 05", (Il2CppImage* image, const char* namespaze, const char* name))
 RESOLVE_BY_XREF_SIGNATURE(int32_t, il2cpp_field_get_offset, "E8 ? ? ? ? 49 03 45", (FieldInfo* field))
-
+RESOLVE_BY_XREF_SIGNATURE(Il2CppArray*, il2cpp_array_new, "E8 ? ? ? ? 48 8B D8 8B 87", (Il2CppClass* elementTypeInfo, uintptr_t length))

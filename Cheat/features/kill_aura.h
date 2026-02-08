@@ -3,11 +3,9 @@
 
 namespace features
 {
-	class Autotalk : public Feature {
+	class KillAura : public Feature {
 	public:
 		void DrawUI() override;
-		void DrawBackgroundUI() override;
 		void OnInit() override;
-		void OnUpdate() override;
 	};
 }

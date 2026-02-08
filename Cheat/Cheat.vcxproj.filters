@@ -108,7 +108,7 @@
     <ClInclude Include="config\config.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="features\autotalk.h">
+    <ClInclude Include="features\auto_talk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="features\map_teleport.h">
@@ -154,6 +154,27 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="game_api\game\player.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="features\auto_loot.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="features\noclip.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="features\god_mode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="features\network_analyzer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="features\skip_cutscene.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="features\kill_aura.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="features\game_speed.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -227,7 +248,7 @@
     <ClCompile Include="config\config.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="features\autotalk.cpp">
+    <ClCompile Include="features\auto_talk.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="features\map_teleport.cpp">
@@ -255,6 +276,27 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="game_api\game\player.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="features\auto_loot.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="features\noclip.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="features\god_mode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="features\network_analyzer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="features\skip_cutscene.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="features\kill_aura.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="features\game_speed.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

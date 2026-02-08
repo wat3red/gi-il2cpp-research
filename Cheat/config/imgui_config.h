@@ -15,6 +15,8 @@ namespace ImGuiEx {
 
 	bool SliderInt(const char* label, ConfigVar<int>& var, int min, int max, const char* format = ("%d"));
 
+	void Hotkey(const char* label, ConfigVar<ImGuiKey>& hotkey);
+
 	template<typename T>
 	bool InputText(const char* label, ConfigVar<T>& var, size_t buf_size = 256) {
 		char buffer[256];

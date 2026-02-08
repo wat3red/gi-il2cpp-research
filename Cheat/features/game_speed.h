@@ -3,10 +3,11 @@
 
 namespace features
 {
-	class ESP : public Feature {
+	class GameSpeed : public Feature {
 	public:
+		static void MarkLocalThread();
+
 		void DrawUI() override;
-		void DrawBackgroundUI() override;
-		void OnUpdate() override;
+		void OnInit() override;
 	};
 }

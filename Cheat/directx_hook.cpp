@@ -7,6 +7,8 @@
 #include <imgui/backends/imgui_impl_win32.h>
 #include <minhook/include/MinHook.h>
 
+#include <features/game_speed.h>
+
 #include <psapi.h>
 #include <iostream>
 #include <vector>
@@ -31,8 +33,6 @@ LRESULT CALLBACK hook_WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 	if (Menu::GetInstance().m_IsOpen) {
 		return true;
 	}
-
-
 
 	return CallWindowProc(OriginalWndProcHandler, hWnd, uMsg, wParam, lParam);
 }
@@ -93,6 +93,8 @@ HRESULT __fastcall hook_Present(IDXGISwapChain* pChain, UINT SyncInterval, UINT 
 	if (!g_bInitialised) {
 		if (SUCCEEDED(pChain->GetDevice(__uuidof(ID3D11Device), (void**)&pDevice))) {
 			ImGui::CreateContext();
+
+			features::GameSpeed::MarkLocalThread();
 
 			DXGI_SWAP_CHAIN_DESC desc0 = {};
 			pChain->GetDesc(&desc0);
@@ -207,6 +209,8 @@ namespace dx_hook {
 
 	static IDXGISwapChainPresent findDirect11Present()
 	{
+		features::GameSpeed::MarkLocalThread();
+
 		while (!GetModuleHandleA(("dxgi.dll")))
 		{
 			Sleep(100);

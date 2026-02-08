@@ -3,10 +3,11 @@
 
 namespace features
 {
-	class ESP : public Feature {
+	class SkipCutscene : public Feature {
 	public:
 		void DrawUI() override;
 		void DrawBackgroundUI() override;
+		void OnInit() override;
 		void OnUpdate() override;
 	};
 }

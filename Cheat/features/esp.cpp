@@ -144,8 +144,6 @@ namespace features
 		}
 	}
 
-	void ESP::OnInit() {}
-
 	void ESP::OnUpdate() {
 		if (!config.esp.enabled) return;
 

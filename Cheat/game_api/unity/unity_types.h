@@ -17,6 +17,20 @@ namespace Unity {
 		Vector3 operator *(float k) { return { x * k, y * k, z * k }; }
 		Vector3 operator -(Vector3 B) { return { x - B.x, y - B.y, z - B.z }; }
 		Vector3 operator +(Vector3 B) { return { x + B.x, y + B.y, z + B.z }; }
+		Vector3& operator +=(const Vector3& b) {
+			x += b.x;
+			y += b.y;
+			z += b.z;
+			return *this;
+		}
+
+		Vector3& operator -=(const Vector3& b) {
+			x -= b.x;
+			y -= b.y;
+			z -= b.z;
+			return *this;
+		}
+
 		Vector3(float x, float y, float z) : x(x), y(y), z(z) {}
 		Vector3() {}
 

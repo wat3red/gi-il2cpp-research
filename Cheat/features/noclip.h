@@ -3,10 +3,10 @@
 
 namespace features
 {
-	class ESP : public Feature {
+	class Noclip : public Feature {
 	public:
 		void DrawUI() override;
-		void DrawBackgroundUI() override;
 		void OnUpdate() override;
+		void UpdateHotkeys() override;
 	};
 }

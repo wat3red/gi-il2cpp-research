@@ -33,7 +33,7 @@ public:
 		// FILTERS
 		// We map the Enum ID to a ConfigVar. 
 		std::map<int32_t, ConfigVar<bool>> filters;
-		
+
 		ESP() {
 			// Initialize filters for common entities. 
 			// You can add more from your Enum list here.
@@ -46,14 +46,45 @@ public:
 		}
 	} esp;
 
-	struct Autotalk {
-		ConfigVar<bool> enabled{ "autotalk", "enabled", false };
-		ConfigVar<bool> auto_choose_reply{ "autotalk", "auto_choose_reply", false };
-	} autotalk;
+	struct AutoTalk {
+		ConfigVar<bool> enabled{ "auto_talk", "enabled", false };
+		ConfigVar<bool> auto_choose_reply{ "auto_talk", "auto_choose_reply", false };
+		ConfigVar<bool> fast_dialog{ "auto_talk", "fast_dialog", false };
+		ConfigVar<float> speed_modifier{ "auto_talk", "speed_modifier", 2.f };
+	} auto_talk;
+
+	struct GodMode {
+		ConfigVar<bool> enabled{ "god_mode", "enabled", false };
+	} god_mode;
+
+	struct KillAura {
+		ConfigVar<bool> enabled{ "kill_aura", "enabled", false };
+		ConfigVar<float> range{ "kill_aura", "range", 5.f };
+	} kill_aura;
+
+	struct AutoLoot {
+		ConfigVar<bool> enabled{ "auto_loot", "enabled", false };
+		ConfigVar<float> loot_range{ "auto_loot", "loot_range", 5.f };
+	} auto_loot;
+
+	struct GameSpeed {
+		ConfigVar<bool> enabled{ "game_speed", "enabled", false };
+		ConfigVar<float> speed{ "game_speed", "speed", 1.f };
+	} game_speed;
 
 	struct MapTeleport {
 		ConfigVar<bool> enabled{ "map_teleport", "enabled", false };
 	} map_teleport;
+
+	struct Noclip {
+		ConfigVar<bool> enabled{ "noclip", "enabled", false };
+		ConfigVar<float> speed{ "noclip", "speed", 5.f };
+		ConfigVar<ImGuiKey> enable_hotkey{ "noclip", "enable_hotkey", ImGuiKey_V };
+	} noclip;
+
+	struct SkipCutscene {
+		ConfigVar<bool> enabled{ "skip_cutscene", "enabled", false };
+	} skip_cutscene;
 
 	struct SettingsUI {
 		ConfigVar<int> theme{ ("settingsUI"), ("theme"), 0 };

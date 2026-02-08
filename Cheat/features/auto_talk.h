@@ -3,10 +3,9 @@
 
 namespace features
 {
-	class ESP : public Feature {
+	class AutoTalk : public Feature {
 	public:
 		void DrawUI() override;
-		void DrawBackgroundUI() override;
-		void OnUpdate() override;
+		void OnInit() override;
 	};
 }

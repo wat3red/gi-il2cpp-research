@@ -35,9 +35,9 @@ public:
 	ConfigVar& operator=(const ConfigVar<T>& other) {
 		if (this != &other) {
 			this->value = other.value;
-			this->path = other.path;
-			this->key = other.key;
-			this->initialized = other.initialized;
+			//this->path = other.path;
+			//this->key = other.key;
+			//this->initialized = other.initialized;
 		}
 		return *this;
 	}
