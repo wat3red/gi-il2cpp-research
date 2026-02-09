@@ -156,6 +156,7 @@
     <ClInclude Include="directx_hook.h" />
     <ClInclude Include="features\auto_talk.h" />
     <ClInclude Include="features\auto_loot.h" />
+    <ClInclude Include="features\costume_changer.h" />
     <ClInclude Include="features\esp.h" />
     <ClInclude Include="features\feature.h" />
     <ClInclude Include="features\features.h" />
@@ -210,6 +211,7 @@
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="features\auto_talk.cpp" />
     <ClCompile Include="features\auto_loot.cpp" />
+    <ClCompile Include="features\costume_changer.cpp" />
     <ClCompile Include="features\esp.cpp" />
     <ClCompile Include="features\features.cpp" />
     <ClCompile Include="features\game_speed.cpp" />
