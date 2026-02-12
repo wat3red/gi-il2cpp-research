@@ -167,6 +167,7 @@
     <ClInclude Include="features\network_analyzer.h" />
     <ClInclude Include="features\noclip.h" />
     <ClInclude Include="features\skip_cutscene.h" />
+    <ClInclude Include="game_api\memory\offset_db.h" />
     <ClInclude Include="game_api\game\entities.h" />
     <ClInclude Include="game_api\game\map.h" />
     <ClInclude Include="game_api\game\molemole_types.h" />
@@ -226,6 +227,7 @@
     <ClCompile Include="game_api\game\player.cpp" />
     <ClCompile Include="game_api\game\singleton.cpp" />
     <ClCompile Include="game_api\il2cpp\il2cpp_types.cpp" />
+    <ClCompile Include="game_api\memory\offset_db.cpp" />
     <ClCompile Include="game_api\memory\signature.cpp" />
     <ClCompile Include="game_api\unity\unity_objects.cpp" />
     <ClInclude Include="game_api\version_constants.h" />

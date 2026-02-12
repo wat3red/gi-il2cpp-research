@@ -5,6 +5,8 @@
 
 #include <windows.h>
 #include <imgui/imgui.h>
+#include <map>
+#include <vector>
 
 class Config {
 public:
@@ -85,6 +87,73 @@ public:
 	struct SkipCutscene {
 		ConfigVar<bool> enabled{ "skip_cutscene", "enabled", false };
 	} skip_cutscene;
+
+	struct CostumeMapping {
+		int id;
+		uint32_t avatar_id;
+		uint32_t costume_id;
+		uint32_t flycloak_id;
+
+		CostumeMapping(int _id, uint32_t _avatar_id, uint32_t _costume_id, uint32_t _flycloak_id)
+			: id(_id), avatar_id(_avatar_id), costume_id(_costume_id), flycloak_id(_flycloak_id) {}
+	};
+
+	struct CostumeChanger {
+		ConfigVar<bool> enabled{ "costume_changer", "enabled", false };
+		ConfigVar<int>  mapping_count{ "costume_changer", "mapping_count", 0 };
+		std::vector<CostumeMapping> mappings;
+
+		void LoadMappings() {
+			mappings.clear();
+			const int count = mapping_count;
+			for (int i = 0; i < count; i++) {
+				const std::string section = "costume_changer.costumes.id_" + std::to_string(i);
+				ConfigVar<uint32_t> av{ section, "avatar_id",   0u };
+				ConfigVar<uint32_t> co{ section, "costume_id",  0u };
+				ConfigVar<uint32_t> fl{ section, "flycloak_id", 0u };
+				mappings.emplace_back(i, (uint32_t)av, (uint32_t)co, (uint32_t)fl);
+			}
+		}
+
+		void SaveMappings() {
+			mapping_count = (int)mappings.size();
+			for (int i = 0; i < (int)mappings.size(); i++) {
+				mappings[i].id = i;
+				const std::string section = "costume_changer.costumes.id_" + std::to_string(i);
+				ConfigVar<uint32_t>{ section, "avatar_id", 0u } = mappings[i].avatar_id;
+				ConfigVar<uint32_t>{ section, "costume_id", 0u } = mappings[i].costume_id;
+				ConfigVar<uint32_t>{ section, "flycloak_id", 0u } = mappings[i].flycloak_id;
+			}
+		}
+
+		void SaveMapping(uint32_t avatar_id, uint32_t costume_id, uint32_t flycloak_id) {
+			for (auto& m : mappings) {
+				if (m.avatar_id == avatar_id) {
+					m.costume_id = costume_id;
+					m.flycloak_id = flycloak_id;
+					SaveMappings();
+					return;
+				}
+			}
+			mappings.emplace_back((int)mappings.size(), avatar_id, costume_id, flycloak_id);
+			SaveMappings();
+		}
+
+		void RemoveMapping(uint32_t avatar_id) {
+			auto it = std::find_if(mappings.begin(), mappings.end(),
+				[avatar_id](const CostumeMapping& m) { return m.avatar_id == avatar_id; });
+			if (it != mappings.end()) {
+				mappings.erase(it);
+				SaveMappings();
+			}
+		}
+
+		CostumeMapping* GetMapping(uint32_t avatar_id) {
+			for (auto& m : mappings)
+				if (m.avatar_id == avatar_id) return &m;
+			return nullptr;
+		}
+	} costume_changer;
 
 	struct SettingsUI {
 		ConfigVar<int> theme{ ("settingsUI"), ("theme"), 0 };

@@ -7,8 +7,8 @@
 void Menu::Draw() {
 	features::DrawAllBackgroundUI();
 
-	// Throttle hotkey updates to once every 500 ms
-	static auto lastHotkeyUpdate = std::chrono::steady_clock::now() - std::chrono::milliseconds(500);
+	// Throttle hotkey updates to once every 100 ms
+	static auto lastHotkeyUpdate = std::chrono::steady_clock::now();
 	constexpr std::chrono::milliseconds hotkeyInterval(100);
 	auto now = std::chrono::steady_clock::now();
 	if (now - lastHotkeyUpdate >= hotkeyInterval) {

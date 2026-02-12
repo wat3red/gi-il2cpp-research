@@ -35,7 +35,8 @@ Unity::GameObject* BaseEntity::GetGameObject() {
 }
 
 EntityType BaseEntity::GetType() {
-	return *(MoleMole::EntityType*)((uintptr_t)this + version_constants::offsets::entity_type);
+	static int32_t offset = Mem::Signature("83 BE ? ? ? ? ? 75 ? 48 8B 15 ? ? ? ? E8 ? ? ? ? 48 85 C0").FindDisp();
+	return *(MoleMole::EntityType*)((uintptr_t)this + offset);
 }
 
 Il2CppString* MoleMole::BaseEntity::GetName() {
@@ -59,8 +60,10 @@ Unity::Rigidbody* MoleMole::BaseEntity::GetRigidbody() {
 }
 
 uint32_t MoleMole::BaseEntity::GetRuntimeID() {
-	//Log("0x32C %d\n", *(uint32_t*)((uintptr_t)this + 0x32C));
-	return *(uint32_t*)((uintptr_t)this + version_constants::offsets::runtime_id);
+	static int32_t offset = Mem::Signature(
+		"C7 87 ? ? ? ? 00 00 00 00 48 8B 87 ? ? ? ? 48 85 C0 0F 84 ? ? ? ? FF 40 ? 44 8B 40 ? C7 40 ? 00 00 00 00 45 85 C0 7E ? 48 8B 48 ? 31 D2 E8 ? ? ? ? 48 8B 05"
+	).FindDisp();
+	return *(uint32_t*)((uintptr_t)this + offset);
 }
 
 ItemModule* MoleMole::ItemModule::Instance() {

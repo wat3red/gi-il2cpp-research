@@ -180,6 +180,9 @@
     <ClInclude Include="features\costume_changer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="game_api\memory\offset_db.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -303,6 +306,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="features\costume_changer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="game_api\memory\offset_db.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

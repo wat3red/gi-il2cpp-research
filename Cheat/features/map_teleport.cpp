@@ -23,25 +23,24 @@ namespace features
 	// to find "class MoleMole.BasePageContext " just search for "public virtual Void ClosePage();"
 	// "class MoleMole.UIManager " found via "public UIPlatformConfig "
 	// "class MoleMole.InLevelMapPageContext " found via "private MonoInLevelMapPage "
-	void OnMapClicked_Internal(void* _this, Unity::Vector2 screenPos) {
+	void OnMapClicked_Internal(MoleMole::InLevelMapPageContext* _this, Unity::Vector2 screenPos) {
 		// "private Dictionary<Int32,List<Notify>> " or "private MonoBaseCanvas "
-		Il2CppObject* uiManager = MoleMole::SingletonManager::GetSingletonInstance(version_constants::beebyte::ui_manager_class);
-		if (!uiManager) return;
+		MoleMole::UIManager* ui_manager = MoleMole::UIManager::Instance();
+		if (!ui_manager) return;
 
-		Unity::Camera* ui_camera = *reinterpret_cast<Unity::Camera**>((uintptr_t)uiManager + version_constants::offsets::ui_camera);
+		Unity::Camera* ui_camera = ui_manager->GetUICamera();
 		if (!ui_camera) return;
 
-		void* mono_in_level_map_page = *reinterpret_cast<void**>((uintptr_t)_this + version_constants::offsets::mono_in_level_map_page);
-		if (!mono_in_level_map_page) return;
+		MoleMole::MonoInLevelMapPage* page_mono = _this->GetPageMono();
+		if (!page_mono) return;
 
-		auto map_background = Il2Cpp::Method::Call<Unity::Transform*>("MoleMole", "MonoInLevelMapPage", "get_mapBackground", 0, mono_in_level_map_page);
+		Unity::Transform* map_background = page_mono->GetMapBackground();
 		if (!map_background) return;
 
 		Unity::Vector2 levelPos = { 0,0 };
 		if (Il2Cpp::Method::Call<bool>("UnityEngine", "RectTransformUtility", "ScreenPointToLocalPointInRectangle", 4, map_background, screenPos, ui_camera, &levelPos)) {
-
-			auto mapRect = Il2Cpp::Method::Call<Unity::Rect>("MoleMole", "MonoInLevelMapPage", "get_mapRect", 0, mono_in_level_map_page);
-			Unity::Rect mapViewRect = *reinterpret_cast<Unity::Rect*>((uintptr_t)_this + version_constants::offsets::map_view_rect);
+			Unity::Rect mapRect = page_mono->GetMapRect();
+			Unity::Rect mapViewRect = _this->GetMapViewRect();
 
 			levelPos.x = (levelPos.x - mapRect.m_XMin) / mapRect.m_Width;
 			levelPos.x = (levelPos.x * mapViewRect.m_Width) + mapViewRect.m_XMin;
@@ -62,8 +61,8 @@ namespace features
 		}
 	}
 
-	void (*InLevelMapPageContext_OnMapClicked)(void* _this, Unity::Vector2 screenPos);
-	void hInLevelMapPageContext_OnMapClicked(void* _this, Unity::Vector2 screenPos) {
+	void (*InLevelMapPageContext_OnMapClicked)(MoleMole::InLevelMapPageContext* _this, Unity::Vector2 screenPos);
+	void hInLevelMapPageContext_OnMapClicked(MoleMole::InLevelMapPageContext* _this, Unity::Vector2 screenPos) {
 		if (config.map_teleport.enabled) {
 			OnMapClicked_Internal(_this, screenPos);
 		}

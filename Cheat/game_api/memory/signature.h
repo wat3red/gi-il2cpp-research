@@ -16,7 +16,7 @@ namespace Mem {
 
         void* Scan(const uint8_t* base = 0, size_t size = 0) const;
         void* ScanXref(const uint8_t* base = 0, size_t size = 0) const;
-
+        int32_t FindDisp(const uint8_t* base = 0, size_t size = 0) const;
     private:
         void Parse(const std::string& pattern);
 

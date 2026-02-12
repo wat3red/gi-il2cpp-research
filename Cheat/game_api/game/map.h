@@ -5,7 +5,7 @@
 namespace MoleMole
 {
 	struct ConfigScenePoint {
-		Unity::Vector3 GetTranPos();
+		//Unity::Vector3 GetTranPos();
 	};
 
 	struct ScenePointData {
@@ -16,15 +16,29 @@ namespace MoleMole
 		uint32_t entityId;
 		uint32_t level;
 	};
-	static_assert(offsetof(ScenePointData, level) == 0x18, "asd");
 
 	struct MapModule {
 		static MapModule* Instance();
-		Unity::Dictionary<uint32_t, Unity::Dictionary<uint32_t, ScenePointData>*>* GetScenePointDics();
+		//Unity::Dictionary<uint32_t, Unity::Dictionary<uint32_t, ScenePointData>*>* GetScenePointDics();
 	};
 
 	struct MapManager {
 		static MapManager* Instance();
-		uint32_t GetMapSceneID();
+		//uint32_t GetMapSceneID();
+	};
+
+	struct UIManager {
+		static UIManager* Instance();
+		Unity::Camera* GetUICamera();
+	};
+
+	struct MonoInLevelMapPage {
+		Unity::Transform* GetMapBackground();
+		Unity::Rect GetMapRect();
+	};
+
+	struct InLevelMapPageContext {
+		MonoInLevelMapPage* GetPageMono();
+		Unity::Rect GetMapViewRect();
 	};
 }
