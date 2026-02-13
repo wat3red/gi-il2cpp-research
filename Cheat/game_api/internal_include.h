@@ -2,6 +2,10 @@
 // circular include fix
 #pragma once
 
+#include "memory/signature.h"
+
+#include "version_constants.h"
+
 #include "unity/unity_collections.h"
 #include "unity/unity_delegates.h"
 #include "unity/unity_objects.h"
@@ -15,3 +19,4 @@
 #include "game/player.h"
 #include "game/molemole_types.h"
 #include "game/singleton.h"
+#include "game/proto.h"

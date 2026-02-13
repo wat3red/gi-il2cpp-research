@@ -169,77 +169,6 @@ namespace features
 
 	void CostumeChanger::DrawBackgroundUI() {}
 
-	template<typename T>
-	struct RepeatedMessageField : Il2CppObject {
-		Unity::List<T>* values;
-		bool isInPool;
-		int32_t count;
-	};
-
-	template<typename T>
-	struct RepeatedPrimitiveField : Il2CppObject {
-		Unity::Array<T>* array;
-		int32_t count;
-	};
-
-	struct AvatarInfo {
-		char _pad0[0x18];
-
-		void* some_pointer1;   // 0x18
-		void* some_pointer2;   // 0x20
-		void* some_pointer3;   // 0x28
-		void* some_pointer4;   // 0x30
-		void* some_pointer5;   // 0x38
-		void* some_pointer6;   // 0x40
-		void* some_pointer7;   // 0x48
-		void* some_pointer8;   // 0x50
-		void* some_pointer9;   // 0x58
-		void* some_pointer10;  // 0x60
-		void* some_pointer11;  // 0x68
-		void* some_pointer12;  // 0x70
-		void* some_pointer13;  // 0x78
-		void* some_pointer14;  // 0x80
-		void* some_pointer15;  // 0x88
-		void* some_pointer16;  // 0x90
-		void* some_pointer17;  // 0x98
-		void* some_pointer18;  // 0xA0
-
-		uint32_t some_uint1;   // 0xA8
-		uint32_t some_uint2;   // 0xAC
-		uint32_t some_uint3;   // 0xB0
-		uint32_t some_uint4;   // 0xB4
-		uint32_t some_uint5;   // 0xB8
-		uint32_t some_uint6;   // 0xBC
-
-		uint64_t guid; // 0xC0
-
-		uint32_t flycloak_id;   // 0xC8
-		bool     some_bool1;   // 0xCC
-
-		uint32_t config_id;   // 0xD0
-		uint32_t some_uint9;   // 0xD4
-		uint32_t costume_id;  // 0xD8
-		int32_t  some_int1;    // 0xDC
-		uint32_t some_uint11;  // 0xE0
-		uint32_t some_uint12;  // 0xE4
-		uint32_t some_uint13;  // 0xE8
-		uint32_t some_uint14;  // 0xEC
-	};
-
-	struct AvatarDataNotify {
-		char _[0x18];
-		RepeatedPrimitiveField<uint64_t>* some_list1; // 0x18
-		RepeatedPrimitiveField<uint32_t>* ownedCostumeList_; // 0x20
-		void* NBCKLBCDFDH; // 0x28
-		RepeatedMessageField<AvatarInfo*>* avatarList_; // 0x30
-		void* NOGFCBAFIAK; // 0x38
-		RepeatedPrimitiveField<uint32_t>* some_list3; // 0x40
-		RepeatedPrimitiveField<uint32_t>* some_list4; // 0x48
-		RepeatedPrimitiveField<uint32_t>* some_list5; // 0x50
-		uint64_t chooseAvatarGuid_; // 0x58
-		uint32_t curAvatarTeamId_; // 0x60
-	};
-
 	struct AvatarCostumeExcelConfig : Il2CppObject {
 		Il2CppString* some_string1; // 0x10
 		Il2CppString* json_name; // 0x18
@@ -264,22 +193,24 @@ namespace features
 	// MoleMole.Config.AvatarExcelConfig : DMCPPFHDBHK
 	// SimpleSafeUInt32 : JNBFFKMNBLO
 	// MoleMole.PlayerModule : MHDKIGGLCHD
-	void(*PlayerModule_OnAvatarDataNotify)(void* _this, AvatarDataNotify* notify);
-	void hPlayerModule_OnAvatarDataNotify(void* _this, AvatarDataNotify* notify) {
+	void(*PlayerModule_OnAvatarDataNotify)(void* _this, Proto::AvatarDataNotify* notify);
+	void hPlayerModule_OnAvatarDataNotify(void* _this, Proto::AvatarDataNotify* notify) {
 		Log("[AvatarNotify] _this=%p notify=%p\n", _this, notify);
 
-		for (size_t i = 0; i < notify->avatarList_->values->size; i++) {
-			AvatarInfo* value = notify->avatarList_->values->array->items[i];
+		Unity::List<Proto::AvatarInfo*>* list = notify->GetAvatarList()->values;
 
-			Log("[%zu] val=%p\n", i, value);
+		for (size_t i = 0; i < list->size; i++) {
+			Proto::AvatarInfo* avatar = list->array->items[i];
 
-			auto mapping = config.costume_changer.GetMapping(value->config_id);
+			Log("[%zu] val=%p\n", i, avatar);
+
+			Config::CostumeMapping* mapping = config.costume_changer.GetMapping(*avatar->ConfigID());
 			if (mapping) {
 				if (mapping->costume_id != 0) {
-					value->costume_id = mapping->costume_id;
+					*avatar->CostumeID() = mapping->costume_id;
 				}
 				if (mapping->flycloak_id != 0) {
-					value->flycloak_id = mapping->flycloak_id;
+					*avatar->FlycloakID() = mapping->flycloak_id;
 				}
 			}
 		}
@@ -293,78 +224,6 @@ namespace features
 		//return CanChangeAvatarEntity(entity, configId, failType, ignoreStateLayer, isSpecialChange, ignoreCollision);
 		return true;
 	}
-
-	struct AvatarChangeCostumeRsp {
-		char _[0x18];
-		uint32_t costume_id;
-		int32_t ret_code;
-		uint64_t some_ulong;
-	};
-
-	struct SceneAvatarInfo {
-		char _pad0[0x18];
-
-		void* some_pointer1;    // 0x18
-		void* some_pointer2;    // 0x20
-		void* some_pointer3;    // 0x28
-		void* some_pointer4;    // 0x30
-		void* some_pointer5;    // 0x38
-		void* some_pointer6;    // 0x40
-		void* some_pointer7;    // 0x48
-		void* some_pointer8;    // 0x50
-		void* some_pointer9;    // 0x58
-		void* some_pointer10;   // 0x60
-		void* some_pointer11;   // 0x68
-		void* some_pointer12;   // 0x70
-		void* some_pointer13;   // 0x78
-		void* some_pointer14;   // 0x80
-		void* some_pointer15;   // 0x88
-		void* some_pointer16;   // 0x90
-
-		uint32_t config_id;    // 0x98
-		uint32_t flycloak_id;    // 0x9C
-		uint32_t some_uint3;    // 0xA0
-		uint32_t some_uint4;    // 0xA4
-		uint32_t some_uint5;    // 0xA8
-		uint32_t some_uint6;    // 0xAC
-		uint32_t some_uint7;    // 0xB0
-		uint32_t some_uint8;    // 0xB4
-		uint32_t some_uint9;    // 0xB8
-		uint32_t some_uint10;   // 0xBC
-
-		uint64_t some_uint64_1; // 0xC0
-
-		uint32_t some_uint11;  // 0xC8
-		uint32_t costume_id;  // 0xCC
-	};
-
-	struct SceneEntityInfo {
-		char _pad0[0x18];
-
-		void* some_pointer1;   // 0x18
-		Il2CppObject* entity;    // 0x20
-		void* some_pointer2;   // 0x28
-		Il2CppString* some_string1;    // 0x30
-
-		void* some_pointer3;           // 0x38
-		void* some_pointer4;           // 0x40
-		void* some_pointer5;           // 0x48
-		void* some_pointer6;           // 0x50
-		void* some_pointer7;           // 0x58
-		void* some_pointer8;           // 0x60
-		void* some_pointer9;           // 0x68
-		void* some_pointer10;          // 0x70
-		void* some_pointer11;          // 0x78
-		void* some_pointer12;          // 0x80
-
-		uint32_t some_uint1;           // 0x88
-		uint32_t some_uint2;           // 0x8C
-		uint32_t some_uint3;           // 0x90
-		uint32_t some_uint4;           // 0x94
-		int32_t  some_int1;            // 0x98
-		uint32_t some_uint5;           // 0x9C
-		int32_t  some_int2;            // 0xA0
-	};
 
 	void CollectItems() {
 		//((void(*)())(g_game_base + 0x8B61E50))(); // prepare
@@ -411,8 +270,8 @@ namespace features
 
 	// 	private void [A-Z]{11}\([A-Z]{11} [A-Z]{11}, LBBDEIFADJM [A-Z]{11}, uint32 [A-Z]{11}, uint32 [A-Z]{11}\)
 	// 	private void [A-Z]{11}\([A-Z]{11} [A-Z]{11}, JNJPFIJANIF [A-Z]{11}, uint32 [A-Z]{11}, uint32 [A-Z]{11}\) // 6.2
-	void (*HandleAuthorityAvatarAppear)(void* _this, SceneEntityInfo* entity, int32_t type, uint32_t infoParam, uint32_t costumeID);
-	void hHandleAuthorityAvatarAppear(void* _this, SceneEntityInfo* entity, int32_t type, uint32_t infoParam, uint32_t costumeID) {
+	void (*HandleAuthorityAvatarAppear)(void* _this, Proto::SceneEntityInfo* entity, int32_t type, uint32_t infoParam, uint32_t costumeID);
+	void hHandleAuthorityAvatarAppear(void* _this, Proto::SceneEntityInfo* entity, int32_t type, uint32_t infoParam, uint32_t costumeID) {
 		Log("[HandleAuthorityAvatarAppear] entity=%p, costumeID=%u, infoParam=%u\n", entity, costumeID, infoParam);
 
 		static bool initialized = false;
@@ -421,14 +280,14 @@ namespace features
 			initialized = true;
 		}
 
-		auto scene_avatar = (SceneAvatarInfo*)entity->entity;
-		auto mapping = config.costume_changer.GetMapping(scene_avatar->config_id);
+		auto scene_avatar = (Proto::SceneAvatarInfo*)entity->Entity();
+		Config::CostumeMapping* mapping = config.costume_changer.GetMapping(*scene_avatar->ConfigID());
 		if (mapping) {
 			if (mapping->costume_id != 0) {
-				scene_avatar->costume_id = mapping->costume_id;
+				*scene_avatar->CostumeID() = mapping->costume_id;
 			}
 			if (mapping->flycloak_id != 0) {
-				scene_avatar->flycloak_id = mapping->flycloak_id;
+				*scene_avatar->FlycloakID() = mapping->flycloak_id;
 			}
 		}
 
@@ -439,7 +298,7 @@ namespace features
 		config.costume_changer.LoadMappings();
 
 		MH_CreateHook(
-			(LPVOID)(g_game_base + 0xE7D7290),
+			Mem::Signature("E8 ? ? ? ? 90 48 83 C4 ? C3 48 89 C1 4C 89 C2").ScanXref(),
 			hHandleAuthorityAvatarAppear,
 			(LPVOID*)&HandleAuthorityAvatarAppear
 		);
@@ -449,15 +308,14 @@ namespace features
 			hPlayerModule_OnSceneTeamUpdateNotify,
 			(LPVOID*)&PlayerModule_OnSceneTeamUpdateNotify
 		);*/
-
 		MH_CreateHook(
-			(LPVOID)(g_game_base + 0xE7CA9D0),
+			Mem::Signature("55 41 57 41 56 41 55 41 54 56 57 53 48 81 EC ? ? ? ? 48 8D AC 24 ? ? ? ? 48 C7 85 ? ? ? ? ? ? ? ? 48 89 D6 48 89 CF 0F 57 C0").ScanXref(),
 			hPlayerModule_OnAvatarDataNotify,
 			(LPVOID*)&PlayerModule_OnAvatarDataNotify
 		);
 
 		MH_CreateHook(
-			(LPVOID)(g_game_base + 0xFD7E180),
+			Mem::Signature("E8 ? ? ? ? 84 C0 0F 85 ? ? ? ? 8B 4C 24 ? E8").ScanXref(),
 			hCanChangeAvatarEntity,
 			(LPVOID*)&CanChangeAvatarEntity
 		);
@@ -470,8 +328,10 @@ namespace features
 	void CostumeChanger::OnUpdate() {
 		if (reload) {
 			MoleMole::PlayerModule* player_module = MoleMole::PlayerModule::Instance();
-			// TryClientReconnect
-			((void(*)(MoleMole::PlayerModule*, int32_t))(g_game_base + 0xE7B9290))(player_module, 1);
+			//((void(*)(MoleMole::PlayerModule*, int32_t))(g_game_base + 0xE7B9290))(player_module, 1); // TryClientReconnect
+			//((void(*)(MoleMole::PlayerModule*))(g_game_base + 0xE7DE970))(player_module); // NeedReloadScene
+			Il2CppObject* network_manager = MoleMole::SingletonManager::GetSingletonInstance(version_constants::beebyte::network_manager_class);
+			NetworkManager_HandleEnetLoginUnfinished(network_manager);
 			reload = false;
 		}
 	}

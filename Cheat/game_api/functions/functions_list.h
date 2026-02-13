@@ -1,5 +1,6 @@
 //public virtual Void ClosePage();
 
+RESOLVE_BY_SIGNATURE(void, NetworkManager_HandleEnetLoginUnfinished, "56 57 48 83 EC ? 48 89 CE 80 3D ? ? ? ? 00 48 8B 05 ? ? ? ? 75 ? 48 8B 88 ? ? ? ? 48 85 C9 74 ? 8B BE ? ? ? ? E8", (Il2CppObject* _this))
 
 RESOLVE_BY_OFFSET(void, VCAnimatorMove_AddVelocity, 0x7B6BD60, (void* _this, int32_t velocityType, Unity::Vector3 velocity, float time, float stopVelocity, bool forceSet, float some_float))
 

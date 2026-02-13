@@ -1,5 +1,5 @@
 #pragma once
-#include "memory/offset_db.h"
+//#include "memory/offset_db.h"
 
 namespace version_constants
 {
@@ -12,6 +12,7 @@ namespace version_constants
 		constexpr const char* map_manager_class = "FDAMOCLBAHC"; // private Dictionary<UInt32,Tuple<String,String>>
 		constexpr const char* loading_manager_class = "JAMJFDLKMIC"; // private Void [A-Z]{11}\(UInt32 [A-Z]{11}, IList<[A-Z]{11}> [A-Z]{11}\);
 		constexpr const char* item_module_class = "BFJBDCPBINB"; // public Void [A-Z]{11}\(UInt32 [A-Z]{11}, List<UInt32> [A-Z]{11}, Boolean [A-Z]{11}\);
+		constexpr const char* network_manager_class = "OBJEIFHOBJK"; // public ConfigChannel
 		//constexpr const char* avatar_entity_class = "OBEOOPGNGLK"; // public Void [A-Z]{11}\(Dictionary<Int32,List<[A-Z]{11}>> [A-Z]{11}, Boolean [A-Z]{11}\)
 		//public OBEOOPGNGLK .*\(\)
 	}
