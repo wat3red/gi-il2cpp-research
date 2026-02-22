@@ -4,7 +4,6 @@
 
 namespace Unity
 {
-
 	struct Object : Il2CppObject {};
 
 	struct Transform;
@@ -26,6 +25,8 @@ namespace Unity
 	struct Behaviour : Component {};
 
 	struct Rigidbody : Component {
+		void SetUseGravity(bool value);
+		void SetIsKinematic(bool value);
 		void SetVelocity(Vector3 value);
 		void SetDetectCollisions(bool value);
 		void SetCollisionDetectionMode(int32_t value);
@@ -45,4 +46,11 @@ namespace Unity
 		static float GetDeltaTime();
 	};
 
+	struct Cursor {
+		static void SetVisible(bool value);
+		static bool GetVisible();
+
+		static void SetLockState(int value);
+		static int GetLockState();
+	};
 }

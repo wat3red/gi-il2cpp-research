@@ -20,6 +20,8 @@ namespace features
 		ImGuiEx::Checkbox("Enable map teleport", config.map_teleport.enabled);
 	}
 
+	MoleMole::InLevelMapPageContext* last_map_context = nullptr;
+
 	// to find "class MoleMole.BasePageContext " just search for "public virtual Void ClosePage();"
 	// "class MoleMole.UIManager " found via "public UIPlatformConfig "
 	// "class MoleMole.InLevelMapPageContext " found via "private MonoInLevelMapPage "
@@ -55,22 +57,47 @@ namespace features
 			MoleMole::ActorUtils::SetAvatarPos(worldPos);
 			MoleMole::EntityManager* entityManager = MoleMole::EntityManager::Instance();
 			MoleMole::ActorUtils::SyncEntityPos(entityManager->GetAvatar(), 0, 0);
-			
-			BasePageContext_ClosePage(_this);
-			NullReferenceException();
+
+			//BasePageContext_ClosePage(_this);
+			//NullReferenceException();
 		}
 	}
 
 	void (*InLevelMapPageContext_OnMapClicked)(MoleMole::InLevelMapPageContext* _this, Unity::Vector2 screenPos);
 	void hInLevelMapPageContext_OnMapClicked(MoleMole::InLevelMapPageContext* _this, Unity::Vector2 screenPos) {
 		if (config.map_teleport.enabled) {
+			last_map_context = _this;
 			OnMapClicked_Internal(_this, screenPos);
+			return;
 		}
 
 		InLevelMapPageContext_OnMapClicked(_this, screenPos);
 	}
 
+	/*void (*InLevelMapPageContext_TryAddCustomMark)(MoleMole::InLevelMapPageContext* _this, Unity::Vector2 levelMapPos, int32_t initialIndex, int32_t type);
+	void hInLevelMapPageContext_TryAddCustomMark(MoleMole::InLevelMapPageContext* _this, Unity::Vector2 levelMapPos, int32_t initialIndex, int32_t type) {
+		if (config.map_teleport.enabled) {
+			return;
+		}
+
+		InLevelMapPageContext_TryAddCustomMark(_this, levelMapPos, initialIndex, type);
+	}*/
+
+	void MapTeleport::OnUpdate() {
+		static bool last_enabled = false;
+
+		if (last_enabled && !config.map_teleport.enabled) {
+			if (last_map_context)
+				BasePageContext_ClosePage(last_map_context);
+		}
+
+		last_enabled = config.map_teleport.enabled;
+	}
+
 	void MapTeleport::OnInit() {
+		//MH_CreateHook((LPVOID)(Mem::Signature("E8 ? ? ? ? 48 8B 0D ? ? ? ? 48 8B 81 ? ? ? ? 48 85 C0 0F 84 ? ? ? ? 48 8B 91 ? ? ? ? 48 85 D2 74").ScanXref()),
+		//	(LPVOID)InLevelMapPageContext_TryAddCustomMark, (LPVOID*)&hInLevelMapPageContext_TryAddCustomMark);
+
 		MH_CreateHook((LPVOID)(Mem::Signature("41 57 41 56 56 57 53 48 81 EC ? ? ? ? 44 0F 29 44 24 ? 0F 29 7C 24 ? 0F 29 74 24 ? 49 89 D6").Scan()),
 			(LPVOID)hInLevelMapPageContext_OnMapClicked, (LPVOID*)&InLevelMapPageContext_OnMapClicked);
 
@@ -78,4 +105,8 @@ namespace features
 		//private void [A-Z]{11}\(MonoMapMark IDLDOMJBBEK)
 	}
 
+	void MapTeleport::UpdateHotkeys() {
+		config.map_teleport.enabled =
+			ImGui::IsKeyDown(config.map_teleport.enable_hotkey);
+	}
 }

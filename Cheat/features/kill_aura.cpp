@@ -59,8 +59,158 @@ namespace features
 	// public FALFDBINCDK [A-Z]{11}\(uint32 [A-Z]{11}\)
 	// void [A-Z]{11}\(uint32 [A-Z]{11}, [A-Z]{11} [A-Z]{11}, boolean [A-Z]{11}, uint32 [A-Z]{11}, uint32 [A-Z]{11}\)
 
+	enum class MotionState {
+		MotionNone,
+		MotionReset,
+		MotionStandby,
+		MotionStandbyMove,
+		MotionWalk,
+		MotionRun,
+		MotionDash,
+		MotionClimb,
+		MotionClimbJump,
+		MotionStandbyToClimb,
+		MotionFight,
+		MotionJump,
+		MotionDrop,
+		MotionFly,
+		MotionSwimMove,
+		MotionSwimIdle,
+		MotionSwimDash,
+		MotionSwimJump,
+		MotionSlip,
+		MotionGoUpstairs,
+		MotionFallOnGround,
+		MotionJumpUpWallForStandby,
+		MotionJumpOffWall,
+		MotionPoweredFly,
+		MotionLadderIdle,
+		MotionLadderMove,
+		MotionLadderSlip,
+		MotionStandbyToLadder,
+		MotionLadderToStandby,
+		MotionDangerStandby,
+		MotionDangerStandbyMove,
+		MotionDangerWalk,
+		MotionDangerRun,
+		MotionDangerDash,
+		MotionCrouchIdle,
+		MotionCrouchMove,
+		MotionCrouchRoll,
+		MotionNotify,
+		MotionLandSpeed,
+		MotionMoveFailAck,
+		MotionWaterfall,
+		MotionDashBeforeShake,
+		MotionSitIdle,
+		MotionForceSetPos,
+		MotionQuestForceDrag,
+		MotionFollowRoute,
+		MotionSkiffBoarding,
+		MotionSkiffNormal,
+		MotionSkiffDash,
+		MotionSkiffPoweredDash,
+		MotionDestroyVehicle,
+		MotionFlyIdle,
+		MotionFlySlow,
+		MotionFlyFast,
+		MotionAimMove,
+		MotionAirCompensation,
+		MotionSorushNormal,
+		MotionRollerCoaster,
+		MotionDiveIdle,
+		MotionDiveMove,
+		MotionDiveDash,
+		MotionDiveDolphine,
+		MotionDebug,
+		MotionOceanCurrent,
+		MotionDiveSwimMove,
+		MotionDiveSwimIdle,
+		MotionDiveSwimDash,
+		MotionArcLight,
+		MotionArcLightSafe,
+		MotionVehicleStandby,
+		MotionVehicleRun,
+		MotionVehicleDash,
+		MotionVehicleClimb,
+		MotionVehicleClimbJump,
+		MotionVehicleStandbyToClimb,
+		MotionVehicleFight,
+		MotionVehicleJump,
+		MotionVehicleDrop,
+		MotionVehicleFly,
+		MotionVehicleSwimMove,
+		MotionVehicleSwimIdle,
+		MotionVehicleSwimDash,
+		MotionVehicleSlip,
+		MotionVehicleGoUpstairs,
+		MotionVehicleFallOnGround,
+		MotionVehicleJumpOffWall,
+		MotionVehiclePoweredFly,
+		MotionVehicleDangerStandby,
+		MotionVehicleDangerRun,
+		MotionVehicleDangerDash,
+		MotionVehicleNotify,
+		MotionVehicleLandSpeed,
+		MotionVehicleDashBeforeShake,
+		MotionVehicleQuestForceDrag,
+		MotionVehicleFollowRoute,
+		MotionVehicleFlyIdle,
+		MotionVehicleFlySlow,
+		MotionVehicleFlyFast,
+		MotionVehicleAirCompensation,
+		MotionVehicleArcLight,
+		MotionVehicleArcLightSafe,
+		MotionVehicleDangerSwimMove,
+		MotionVehicleDangerSwimIdle,
+		MotionVehicleDangerSwimDash,
+		MotionFollowCurveRoute,
+		MotionVehicleFollowCurveRoute,
+		MotionNatsaurusNormal,
+		MotionNatsaurusEntering,
+		MotionMaglev,
+		MotionMaglevSafe,
+		MotionNum
+	};
+
 	void (*LevelSyncCombatPlugin_RequestSceneEntityMoveReq)(Il2CppObject* _this, uint32_t entityId, MotionInfo* motionInfo, bool a1, uint32_t a2, uint32_t a3);
 	void hLevelSyncCombatPlugin_RequestSceneEntityMoveReq(Il2CppObject* _this, uint32_t entityId, MotionInfo* motionInfo, bool a1, uint32_t a2, uint32_t a3) {
+		MoleMole::EntityManager* entity_manager = MoleMole::EntityManager::Instance();
+		MoleMole::BaseEntity* ent = entity_manager->GetValidEntity(entityId);
+		if (ent == entity_manager->GetAvatar()) {
+			MotionState& state = *(MotionState*)((uintptr_t)motionInfo + 0x60);
+			static bool afterDash = false;
+
+			switch (state)
+			{
+			case MotionState::MotionDash:
+			case MotionState::MotionClimb:
+			case MotionState::MotionClimbJump:
+			case MotionState::MotionStandbyToClimb:
+			case MotionState::MotionSwimDash:
+			case MotionState::MotionSwimIdle:
+			case MotionState::MotionSwimMove:
+			case MotionState::MotionSwimJump:
+			case MotionState::MotionFly:
+			case MotionState::MotionFight:
+			case MotionState::MotionDashBeforeShake:
+			case MotionState::MotionDangerDash:
+				state = MotionState::MotionRun;
+				break;
+			case MotionState::MotionJump:
+				if (afterDash)
+					state = MotionState::MotionRun;
+				break;
+			case MotionState::MotionSkiffDash:
+			case MotionState::MotionSkiffPoweredDash:
+				state = MotionState::MotionSkiffNormal;
+				break;
+			}
+			if (state != MotionState::MotionJump && state != MotionState::MotionFallOnGround)
+				afterDash = state == MotionState::MotionDash;
+			//Log("LevelSyncCombatPlugin_RequestSceneEntityMoveReq has been called on avatar, motionState = %d\n", state);
+		}
+
 		if (config.kill_aura.enabled) {
 			MoleMole::EntityManager* entity_manager = MoleMole::EntityManager::Instance();
 			MoleMole::BaseEntity* entity = entity_manager->GetValidEntity(entityId);
@@ -74,10 +224,6 @@ namespace features
 						Log("Entity ID: %d, Type: %d\n", entityId, (int)entity->GetType());
 						entity->SetAbsolutePosition({ entity_pos.x, -1000.f, entity_pos.z });
 
-						//Log("Entity ID: %d, Type: %d\n", entityId, (int)entity->GetType());
-						/*motionInfo->pos1->vector = avatar_pos;
-						motionInfo->pos2->vector = avatar_pos;
-						motionInfo->pos3->vector = avatar_pos;*/
 						motionInfo->pos4->vector = avatar_pos;
 
 						MoleMole::ActorUtils::SyncEntityPos(entity, 0, 0);

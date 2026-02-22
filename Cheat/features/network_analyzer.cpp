@@ -168,13 +168,21 @@ namespace features
 	}
 
 	void DumpProtobufStructure(const std::vector<uint8_t>& data, int indent = 0) {
+		if (indent > 10) return; // max recursion depth guard
+
 		const uint8_t* p = data.data();
 		const uint8_t* end = p + data.size();
 
 		while (p < end) {
+			if (p >= end) break;
+
 			uint32_t tag = ReadVarint32(p, end);
+			if (p > end) break; // ReadVarint32 can overshoot on malformed data
+
 			uint32_t fieldNumber = tag >> 3;
 			uint32_t wireType = tag & 0x7;
+
+			if (fieldNumber == 0) break; // invalid field number, stop
 
 			for (int i = 0; i < indent; i++) Log("  ");
 			Log("Field %u (wire=%u): ", fieldNumber, wireType);
@@ -186,10 +194,30 @@ namespace features
 			else if (wireType == 2) {
 				uint32_t length = ReadVarint32(p, end);
 				Log("length=%u\n", length);
-				// Рекурсивно дампим вложенные сообщения
+
+				// Bounds check before recursing
+				if (length > (uint32_t)(end - p)) {
+					Log("  [INVALID: length exceeds remaining data]\n");
+					break;
+				}
+
 				std::vector<uint8_t> sub(p, p + length);
 				DumpProtobufStructure(sub, indent + 1);
 				p += length;
+			}
+			else if (wireType == 1) { // 64-bit fixed
+				if (end - p < 8) break;
+				Log("64bit\n");
+				p += 8;
+			}
+			else if (wireType == 5) { // 32-bit fixed
+				if (end - p < 4) break;
+				Log("32bit\n");
+				p += 4;
+			}
+			else {
+				Log("unknown wire type, stopping\n");
+				break; // Unknown wire type — stop to avoid garbage parsing
 			}
 		}
 	}
@@ -210,27 +238,28 @@ namespace features
 
 		PacketInfo info;
 		if (ParsePacket((uint8_t*)packet->data, packet->dataLen, info)) {
-			if (info.msgId == 8017) {
+			std::vector<uint16_t> skip{
+				//27610, 20832, 25068, 2323
+			};
+			if (std::find(skip.begin(), skip.end(), info.msgId) == skip.end()) {
 				Log(
-					"[KCP][SEND][OK] AvatarChangeCostumeReq, msgId=%u head=%zu body=%zu\n",
+					"[KCP][SEND][OK] msgId=%u head=%zu body=%zu\n",
 					info.msgId,
 					info.head.size(),
 					info.body.size()
 				);
-				DumpProtobufStructure(info.body);
-
-				return 0;
+				if (info.msgId == 20832) {
+					DumpProtobufStructure(info.body);
+				}
 			}
 		}
 		else {
 			Log("[KCP][SEND][SKIP] Failed to parse packet\n");
 		}
 		int32_t result = KcpNative_kcp_client_send_packet(kcp, packet);
-		Log("[KCP][SEND] result=%d\n", result);
+		//Log("[KCP][SEND] result=%d\n", result);
 		return result;
 	}
-
-
 
 	// Улучшенный парсер protobuf с выводом в удобочитаемом формате
 	struct ProtoField {
@@ -285,15 +314,22 @@ namespace features
 			break;
 
 		case 2:
-		{ // Length-delimited
-			field.length = ReadVarint64(p, end);
-			if (p + field.length <= end) {
-				field.bytes.assign(p, p + field.length);
-				p += field.length;
+		{
+			uint64_t len64 = ReadVarint64(p, end);
+
+			if (len64 > (uint64_t)(end - p)) {
+				// Некорректная длина прекращаем парсинг
+				p = end;
+				break;
 			}
+
+			field.length = (uint32_t)len64;
+
+			field.bytes.assign(p, p + field.length);
+			p += field.length;
+
 			break;
 		}
-
 		case 5: // 32-bit
 			if (end - p >= 4) {
 				field.varint = *(uint32_t*)p;
@@ -313,8 +349,13 @@ namespace features
 
 		int count = 0;
 		while (p < end && count < maxFields) {
+			const uint8_t* before = p;
+
 			ProtoField field = ParseProtoField(p, end, 0);
-			if (field.number == 0) break;
+
+			if (field.number == 0 || p <= before)
+				break;
+
 			fields.push_back(field);
 			count++;
 		}
@@ -328,7 +369,6 @@ namespace features
 			PacketInfo info;
 			if (ParsePacket((uint8_t*)evt->packet->data, evt->packet->dataLen, info)) {
 
-				// Перехватываем AvatarChangeCostumeRsp
 				if (info.msgId == 6019) {
 					Log("\n==== [RECV] AvatarChangeCostumeRsp ====\n");
 
@@ -373,7 +413,7 @@ namespace features
 		);*/
 
 
-		//MH_CreateHook((LPVOID)(Mem::Signature("48 89 5C 24 ? 48 89 6C 24 ? 56 57 41 56 48 83 EC ? 48 8B EA 48 85 D2").Scan()), (LPVOID)hKcpNative_kcp_client_send_packet, (LPVOID*)&KcpNative_kcp_client_send_packet);
+		MH_CreateHook((LPVOID)(Mem::Signature("48 89 5C 24 ? 48 89 6C 24 ? 56 57 41 56 48 83 EC ? 48 8B EA 48 85 D2").Scan()), (LPVOID)hKcpNative_kcp_client_send_packet, (LPVOID*)&KcpNative_kcp_client_send_packet);
 	}
 
 	void NetworkAnalyzer::OnUpdate() {

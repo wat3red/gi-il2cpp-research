@@ -40,36 +40,6 @@ WSASend_t o_WSASend = nullptr;
 typedef int (WINAPI* connect_t)(SOCKET, const sockaddr*, int);
 connect_t o_connect = nullptr;
 
-int WINAPI h_send(SOCKET s, const char* buf, int len, int flags) {
-	if (g_block_packets)
-		return len; // притворяемся, что отправили
-
-	return o_send(s, buf, len, flags);
-}
-
-int WINAPI h_WSASend(
-	SOCKET s, LPWSABUF buffers, DWORD bufferCount,
-	LPDWORD bytesSent, DWORD flags,
-	LPWSAOVERLAPPED overlapped,
-	LPWSAOVERLAPPED_COMPLETION_ROUTINE completion
-) {
-	if (g_block_packets) {
-		if (bytesSent) *bytesSent = buffers->len;
-		return 0;
-	}
-
-	return o_WSASend(s, buffers, bufferCount, bytesSent, flags, overlapped, completion);
-}
-
-int WINAPI h_connect(SOCKET s, const sockaddr* name, int namelen) {
-	if (g_block_packets) {
-		WSASetLastError(WSAECONNREFUSED);
-		return SOCKET_ERROR;
-	}
-
-	return o_connect(s, name, namelen);
-}
-
 void DisableLogReport()
 {
 	wchar_t filename[MAX_PATH] = {};
@@ -82,57 +52,31 @@ void DisableLogReport()
 	CreateFileW((path / "MiHoYoMTRSDK.dll").c_str(), GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 }
 
-bool PatchMemory(void* address, const void* bytes, size_t size) {
-	DWORD oldProtect;
-	if (!VirtualProtect(address, size, PAGE_EXECUTE_READWRITE, &oldProtect))
-		return false;
+void InitConsole() {
+	AllocConsole();
 
-	std::memcpy(address, bytes, size);
-	FlushInstructionCache(GetCurrentProcess(), address, size);
+	FILE* f_out = nullptr;
+	FILE* f_in = nullptr;
+	FILE* f_err = nullptr;
 
-	VirtualProtect(address, size, oldProtect, &oldProtect);
-	return true;
+	freopen_s(&f_out, "CONOUT$", "w", stdout);
+	freopen_s(&f_in, "CONIN$", "r", stdin);
+	freopen_s(&f_err, "CONOUT$", "w", stderr);
+
+	std::ios::sync_with_stdio(true);
+
+	std::cin.clear();
+	std::cout.clear();
+	std::cerr.clear();
 }
 
-// Packet Blocker Hooks
-bool InitBlockingHooks() {
-	if (MH_Initialize() != MH_OK) {
-		Log("MinHook init failed!\n");
-		return 0;
-	}
-
-	MH_CreateHookApi(L"ws2_32", "send", h_send, (LPVOID*)&o_send);
-	MH_CreateHookApi(L"ws2_32", "WSASend", h_WSASend, (LPVOID*)&o_WSASend);
-	MH_CreateHookApi(L"ws2_32", "connect", h_connect, (LPVOID*)&o_connect);
-
-	MH_EnableHook(MH_ALL_HOOKS);
-
-	// ban :)
-	//constexpr uint8_t nops[2] = { 0x90, 0x90 }; 
-	//PatchMemory((void*)(g_game_base + 0x992B98), nops, sizeof(nops));
-
-	return 1;
-}
 
 // Thread entry: initialize console, open dump file, resolve function ptrs, hook
 DWORD WINAPI StartThread(LPVOID)
 {
-	AllocConsole();
-	FILE* f_out = nullptr;
-	FILE* f_in = nullptr;
-	FILE* f_err = nullptr;
-	freopen_s(&f_out, "CONOUT$", "w", stdout);
-	freopen_s(&f_in, "CONIN$", "r", stdin);
-	freopen_s(&f_err, "CONOUT$", "w", stderr);
-	std::ios::sync_with_stdio(true);
-	std::cin.clear();
-	std::cout.clear();
-	std::cerr.clear();
+	MH_Initialize();
 
-	//while (true) {
-		//Sleep(1000);
-	//}
-
+	InitConsole();
 	DisableLogReport();
 
 	g_game_base = (uintptr_t)GetModuleHandle(NULL);
@@ -306,15 +250,126 @@ public:
 };
 NetworkBlocker* g_blocker = nullptr;
 
+
+#include <DbgHelp.h>
+#pragma comment(lib, "Dbghelp.lib")
+
+LONG WINAPI CrashHandler(EXCEPTION_POINTERS* ExceptionInfo);
+
+void PrintStackTrace(CONTEXT* ctx)
+{
+	HANDLE process = GetCurrentProcess();
+	HANDLE thread = GetCurrentThread();
+
+	SymInitialize(process, NULL, TRUE);
+	SymSetOptions(SYMOPT_LOAD_LINES | SYMOPT_UNDNAME);
+
+	STACKFRAME64 frame{};
+
+	DWORD machineType = IMAGE_FILE_MACHINE_AMD64;
+	frame.AddrPC.Offset = ctx->Rip;
+	frame.AddrFrame.Offset = ctx->Rbp;
+	frame.AddrStack.Offset = ctx->Rsp;
+
+	frame.AddrPC.Mode = AddrModeFlat;
+	frame.AddrFrame.Mode = AddrModeFlat;
+	frame.AddrStack.Mode = AddrModeFlat;
+
+	Log("\n==== STACK TRACE ====\n");
+
+	for (int i = 0; i < 64; i++)
+	{
+		if (!StackWalk64(machineType, process, thread, &frame, ctx, NULL,
+			SymFunctionTableAccess64, SymGetModuleBase64, NULL))
+			break;
+
+		DWORD64 addr = frame.AddrPC.Offset;
+		if (!addr) break;
+
+		char buffer[sizeof(SYMBOL_INFO) + 256];
+		PSYMBOL_INFO symbol = (PSYMBOL_INFO)buffer;
+		symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+		symbol->MaxNameLen = 255;
+
+		DWORD64 displacement = 0;
+
+		if (SymFromAddr(process, addr, &displacement, symbol))
+		{
+			IMAGEHLP_LINE64 line{};
+			line.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
+			DWORD lineDisplacement = 0;
+
+			if (SymGetLineFromAddr64(process, addr, &lineDisplacement, &line))
+			{
+				Log("#%02d 0x%p %s + 0x%llx (%s:%lu)\n",
+					i,
+					(void*)addr,
+					symbol->Name,
+					displacement,
+					line.FileName,
+					line.LineNumber);
+			}
+			else
+			{
+				Log("#%02d 0x%p %s + 0x%llx\n",
+					i,
+					(void*)addr,
+					symbol->Name,
+					displacement);
+			}
+		}
+		else
+		{
+			Log("#%02d 0x%p\n", i, (void*)addr);
+		}
+	}
+
+	Log("==== END STACK TRACE ====\n\n");
+
+	SymCleanup(process);
+}
+
+LONG WINAPI CrashHandler(EXCEPTION_POINTERS* ExceptionInfo) {
+	Log("\n===== CRASH DETECTED =====\n");
+	Log("Exception code: 0x%X\n", ExceptionInfo->ExceptionRecord->ExceptionCode);
+	Log("Exception address: 0x%p\n", ExceptionInfo->ExceptionRecord->ExceptionAddress);
+
+	PrintStackTrace(ExceptionInfo->ContextRecord);
+
+	if (g_log_file)
+		fflush(g_log_file);
+
+	return EXCEPTION_EXECUTE_HANDLER;
+}
+
+LPTOP_LEVEL_EXCEPTION_FILTER(*oSetUnhandledExceptionFilter)(LPTOP_LEVEL_EXCEPTION_FILTER lpTopLevelExceptionFilter);
+LPTOP_LEVEL_EXCEPTION_FILTER WINAPI hSetUnhandledExceptionFilter(LPTOP_LEVEL_EXCEPTION_FILTER lpTopLevelExceptionFilter) {
+	Log("Game tried to override exception filter\n");
+	oSetUnhandledExceptionFilter(CrashHandler);
+	return NULL;
+}
+
 // DLL entry
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lp_reserved)
 {
 	if (ul_reason_for_call == DLL_PROCESS_ATTACH) {
+		/*SetUnhandledExceptionFilter(CrashHandler);
+		AddVectoredExceptionHandler(1, [](PEXCEPTION_POINTERS ExceptionInfo) -> LONG {
+			Log("Vectored exception: 0x%X at 0x%p\n",
+				ExceptionInfo->ExceptionRecord->ExceptionCode,
+				ExceptionInfo->ExceptionRecord->ExceptionAddress);
+			return EXCEPTION_CONTINUE_SEARCH;
+			});*/
+
+		MH_Initialize();
+		MH_CreateHookApi(L"Kernel32", "SetUnhandledExceptionFilter",
+			hSetUnhandledExceptionFilter,
+			(void**)&oSetUnhandledExceptionFilter);
+		MH_EnableHook(MH_ALL_HOOKS);
+
 		DisableThreadLibraryCalls(hModule);
 		g_game_base = (uintptr_t)GetModuleHandle(NULL);
 		g_blocker = new NetworkBlocker();
-		//Sleep(30000);
-		//if (InitBlockingHooks())
 		CreateThread(NULL, 0, StartThread, NULL, 0, NULL);
 	}
 	else if (ul_reason_for_call == DLL_PROCESS_DETACH) {
@@ -322,7 +377,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lp_reser
 			delete g_blocker;
 			g_blocker = nullptr;
 		}
-		
+
 		// flush + close dump file
 		if (g_log_file) {
 			fflush(g_log_file);

@@ -40,7 +40,6 @@ json ConfigManager::Load() {
     return config;
 }
 
-
 std::vector<std::string> ConfigManager::SplitPath(const std::string& path) {
     std::vector<std::string> result;
     size_t start = 0, end;
@@ -50,6 +49,41 @@ std::vector<std::string> ConfigManager::SplitPath(const std::string& path) {
     }
     result.push_back(path.substr(start));
     return result;
+}
+
+void ConfigManager::RemoveKey(const std::string& path, const std::string& key) {
+    json config = Load();
+
+    std::vector<std::string> parts = SplitPath(path);
+    std::vector<json*> stack;
+
+    json* section = &config;
+    stack.push_back(section);
+
+    for (const auto& part : parts) {
+        if (!section->contains(part))
+            return;
+
+        section = &((*section)[part]);
+        stack.push_back(section);
+    }
+
+    section->erase(key);
+
+    // Clean up empty parents (bottom-up)
+    for (int i = (int)stack.size() - 1; i > 0; --i) {
+        json* current = stack[i];
+        json* parent = stack[i - 1];
+
+        if (current->empty()) {
+            parent->erase(parts[i - 1]);
+        }
+        else {
+            break;
+        }
+    }
+
+    Save(config);
 }
 
 void ConfigManager::RemoveSection(const std::string& path) {

@@ -76,6 +76,7 @@ public:
 
 	struct MapTeleport {
 		ConfigVar<bool> enabled{ "map_teleport", "enabled", false };
+		ConfigVar<ImGuiKey> enable_hotkey{ "map_teleport", "enable_hotkey", ImGuiKey_B };
 	} map_teleport;
 
 	struct Noclip {
@@ -116,10 +117,25 @@ public:
 		}
 
 		void SaveMappings() {
-			mapping_count = (int)mappings.size();
-			for (int i = 0; i < (int)mappings.size(); i++) {
-				mappings[i].id = i;
+			const int old_count = mapping_count;   // read previous value
+			const int new_count = (int)mappings.size();
+
+			// Remove old entries if list shrank
+			for (int i = new_count; i < old_count; i++) {
 				const std::string section = "costume_changer.costumes.id_" + std::to_string(i);
+
+				ConfigVar<uint32_t>{ section, "avatar_id", 0u }.Remove();
+				ConfigVar<uint32_t>{ section, "costume_id", 0u }.Remove();
+				ConfigVar<uint32_t>{ section, "flycloak_id", 0u }.Remove();
+			}
+
+			mapping_count = new_count;
+
+			for (int i = 0; i < new_count; i++) {
+				mappings[i].id = i;
+
+				const std::string section = "costume_changer.costumes.id_" + std::to_string(i);
+
 				ConfigVar<uint32_t>{ section, "avatar_id", 0u } = mappings[i].avatar_id;
 				ConfigVar<uint32_t>{ section, "costume_id", 0u } = mappings[i].costume_id;
 				ConfigVar<uint32_t>{ section, "flycloak_id", 0u } = mappings[i].flycloak_id;
@@ -139,14 +155,6 @@ public:
 			SaveMappings();
 		}
 
-		void RemoveMapping(uint32_t avatar_id) {
-			auto it = std::find_if(mappings.begin(), mappings.end(),
-				[avatar_id](const CostumeMapping& m) { return m.avatar_id == avatar_id; });
-			if (it != mappings.end()) {
-				mappings.erase(it);
-				SaveMappings();
-			}
-		}
 
 		CostumeMapping* GetMapping(uint32_t avatar_id) {
 			for (auto& m : mappings)

@@ -211,26 +211,22 @@ namespace dx_hook {
 	{
 		features::GameSpeed::MarkLocalThread();
 
-		while (!GetModuleHandleA(("dxgi.dll")))
-		{
+		while (!GetModuleHandleA(("dxgi.dll"))) {
 			Sleep(100);
 		}
 
 		printf(("Trying pattern #1...\n"));
 		foundPIC = pattern_scan((uintptr_t)GetModuleHandleA(("dxgi.dll")), ("40 55 53 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? F8 FF FF 48 81 EC"));
-		if (foundPIC == 0)
-		{
+		if (foundPIC == 0) {
 			printf(("Trying pattern #2...\n"));
 			foundPIC = pattern_scan((uintptr_t)GetModuleHandleA(("dxgi.dll")), ("48 8B C4 55 53 56 57 41 54 41 55 41 56 41 57 48 8D A8 58 F7 FF FF 48 81"));
-			if (foundPIC == 0)
-			{
+			if (foundPIC == 0) {
 				MessageBoxA(FindWindowA("UnityWndClass", 0), ("Couldn't find PIC!\nCreate a ticket in our discord server"), ("DXGI ERROR"), (MB_TOPMOST));
 			}
 		}
 
 		o_PresentImplCore = (long(*)(IDXGISwapChain * this_, void* a2, uint32_t a3, void* a4, uint32_t a5, void* a6, void* a7, void* a8))(foundPIC);
 
-		MH_Initialize();
 		MH_CreateHook((LPVOID)foundPIC, hk_PresentImplCore, (LPVOID*)&o_PresentImplCore);
 		MH_EnableHook((LPVOID)foundPIC);
 

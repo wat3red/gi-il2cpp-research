@@ -158,6 +158,7 @@ namespace features
 					uint32_t avatar_to_remove = config.costume_changer.mappings[delete_index].avatar_id;
 					config.costume_changer.mappings.erase(config.costume_changer.mappings.begin() + delete_index);
 					delete_index = -1;
+					config.costume_changer.SaveMappings();
 				}
 
 				ImGui::Unindent();
@@ -226,50 +227,41 @@ namespace features
 	}
 
 	void CollectItems() {
-		//((void(*)())(g_game_base + 0x8B61E50))(); // prepare
+		// second parameter is AvatarCostumeExcelConfig
+		// public UInt64 [A-Z]{11}\([A-Z]{11} [A-Z]{11}, [A-Z]{11} [A-Z]{11}, Boolean [A-Z]{11}\);
 		auto costumes = (((Unity::Dictionary<uint32_t, AvatarCostumeExcelConfig*> *(*)())(g_game_base + 0x8B61E40))());
 		if (costumes) {
 			auto costumes_vector = costumes->to_vector();
-			//Log("Available costumes (%zu total):\n", costumes_vector.size());
 			for (size_t i = 0; i < costumes_vector.size(); i++) {
 				if (costumes_vector[i].first % 100 != 1 && costumes_vector[i].first % 100 != 2)
 					continue;
-				//Log("  Costume ID: %u - %s\n",
-					//costumes_vector[i].first,
-					//costumes_vector[i].second->json_name->ToCStr());
 				all_costumes.insert({ costumes_vector[i].first, costumes_vector[i].second->json_name->ToCStr() });
 			}
 		}
 
-		//((void(*)())(g_game_base + 0xE805890))(); // prepare
+		// you need to find AvatarCostumeExcelConfig first, then you should search for all 3 strings that are present in there to find a class with 3 string, a boolean, 2 uints and 2 safe values
+		// or just search search for '55 41 57 41 56 41 55 41 54 56 57 53 48 81 EC ? ? ? ? 48 8D AC 24 ? ? ? ? 48 C7 45 ? ? ? ? ? 48 85 D2 0F 84 ? ? ? ? 49 89 D6 48 89 CF 48 83 7A ? 00 74 ? 4C 89 F1 BA ? ? ? ? E8 ? ? ? ? 49 8B 46 ? 48 85 C0 0F 84 ? ? ? ? 41 8B 4E ? 3B 48 ? 0F 83 ? ? ? ? 48 63 D1 44 0F B7 7C 10 ? 83 C1 ? 41 89 4E ? 41 81 C7 ? ? ? ? 41 F6 C7 ? 0F 84 ? ? ? ? 48 C7 45 ? 00 00 00 00 48 C7 45 ? 00 00 00 00 49 83 7E ? 00 74 ? 4C 89 F1 BA ? ? ? ? E8 ? ? ? ? 49 8B 46 ? 48 85 C0 0F 84 ? ? ? ? 41 8B 4E ? 3B 48 ? 0F 83 ? ? ? ? 48 63 D1 44 0F B7 6C 10'
+		// to find a method in AvatarFlycloakExcelConfig
 		auto flycloaks = (((Unity::Dictionary<uint32_t, AvatarFlycloakExcelConfig*> *(*)())(g_game_base + 0xE805CA0))());
 		if (flycloaks) {
 			auto flycloaks_vector = flycloaks->to_vector();
-			//Log("Available flycloaks_vector  (%zu total):\n", flycloaks_vector.size());
 			for (size_t i = 0; i < flycloaks_vector.size(); i++) {
-				//Log("  Flycloak ID: %u - %s\n",
-					//flycloaks_vector[i].first,
-					//flycloaks_vector[i].second->json_name->ToCStr());
 				all_flycloaks.insert({ flycloaks_vector[i].first, flycloaks_vector[i].second->json_name->ToCStr() });
 			}
 		}
 
-		//((void(*)())(g_game_base + 0xD4CD3A0))(); // prepare
-		auto avatars = (((Unity::Dictionary<uint32_t, AvatarExcelConfig*> *(*)())(g_game_base + 0xD4CD380))());
+		// search for ' avatarConfig)', this parametr type is AvatarExcelConfig
+		auto avatars = (((Unity::Dictionary<uint32_t, Il2CppObject*> *(*)())(g_game_base + 0xD4CD380))());
 		if (avatars) {
 			auto avatars_vector = avatars->to_vector();
-			//Log("Available avatars (%zu total):\n", avatars_vector.size());
 			for (size_t i = 0; i < avatars_vector.size(); i++) {
-				//Log("  Avatar ID: %u - '%s'\n",
-					//avatars_vector[i].first,
-					//((Il2CppString * (*)(AvatarExcelConfig*))(g_game_base + 0xEC558E0))(avatars_vector[i].second)->ToCStr());
-				all_avatars.insert({ avatars_vector[i].first, ((Il2CppString * (*)(AvatarExcelConfig*))(g_game_base + 0xEC558E0))(avatars_vector[i].second)->ToCStr() });
+				all_avatars.insert({ avatars_vector[i].first, AvatarExcelConfig_GetName(avatars_vector[i].second)->ToCStr() });
 			}
 		}
 	}
 
-	// 	private void [A-Z]{11}\([A-Z]{11} [A-Z]{11}, LBBDEIFADJM [A-Z]{11}, uint32 [A-Z]{11}, uint32 [A-Z]{11}\)
-	// 	private void [A-Z]{11}\([A-Z]{11} [A-Z]{11}, JNJPFIJANIF [A-Z]{11}, uint32 [A-Z]{11}, uint32 [A-Z]{11}\) // 6.2
+	// private void [A-Z]{11}\([A-Z]{11} [A-Z]{11}, LBBDEIFADJM [A-Z]{11}, uint32 [A-Z]{11}, uint32 [A-Z]{11}\) // 6.3 
+	// private void [A-Z]{11}\([A-Z]{11} [A-Z]{11}, JNJPFIJANIF [A-Z]{11}, uint32 [A-Z]{11}, uint32 [A-Z]{11}\) // 6.2
 	void (*HandleAuthorityAvatarAppear)(void* _this, Proto::SceneEntityInfo* entity, int32_t type, uint32_t infoParam, uint32_t costumeID);
 	void hHandleAuthorityAvatarAppear(void* _this, Proto::SceneEntityInfo* entity, int32_t type, uint32_t infoParam, uint32_t costumeID) {
 		Log("[HandleAuthorityAvatarAppear] entity=%p, costumeID=%u, infoParam=%u\n", entity, costumeID, infoParam);
@@ -294,6 +286,7 @@ namespace features
 		HandleAuthorityAvatarAppear(_this, entity, type, infoParam, costumeID);
 	}
 
+	// public UInt64 [A-Z]{11}\([A-Z]{11} [A-Z]{11}, [A-Z]{11} [A-Z]{11}, Boolean [A-Z]{11}\);
 	void CostumeChanger::OnInit() {
 		config.costume_changer.LoadMappings();
 

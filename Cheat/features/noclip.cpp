@@ -51,6 +51,8 @@ namespace features
 		float delta = Unity::Time::GetDeltaTime();
 
 		dir = dir * config.noclip.speed * delta;
+		if (dir.Magnitude() > 0)
+			dir = dir.Normalize();
 
 		MoleMole::EntityManager* entity_manager = MoleMole::EntityManager::Instance();
 		if (!entity_manager) return;
@@ -63,13 +65,13 @@ namespace features
 
 		Unity::Vector3 newPos = avatar->GetAbsolutePosition() + dir;
 
-		//rigidbody->SetDetectCollisions(config.noclip.enabled);
-		//rigidbody->SetCollisionDetectionMode(config.noclip.enabled);
-
 		if (config.noclip.enabled) {
 			rigidbody->SetVelocity({ 0, 0, 0 });
 			avatar->SetAbsolutePosition(newPos);
 		}
+
+		rigidbody->SetUseGravity(!config.noclip.enabled);
+		rigidbody->SetIsKinematic(config.noclip.enabled);
 	}
 
 	void Noclip::UpdateHotkeys() {

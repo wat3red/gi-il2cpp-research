@@ -92,4 +92,6 @@ namespace ConfigManager {
 		}
 		return section->contains(key) ? (*section)[key].get<T>() : defaultValue;
 	}
+
+	void RemoveKey(const std::string& path, const std::string& key);
 }

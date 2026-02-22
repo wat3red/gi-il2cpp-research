@@ -1,14 +1,17 @@
-//public virtual Void ClosePage();
+
+RESOLVE_BY_XREF_SIGNATURE(Il2CppString*, AvatarExcelConfig_GetName, "E8 ? ? ? ? 48 85 F6 0F 84 ? ? ? ? 4C 8B 7C 24", (Il2CppObject* _this))
 
 RESOLVE_BY_SIGNATURE(void, NetworkManager_HandleEnetLoginUnfinished, "56 57 48 83 EC ? 48 89 CE 80 3D ? ? ? ? 00 48 8B 05 ? ? ? ? 75 ? 48 8B 88 ? ? ? ? 48 85 C9 74 ? 8B BE ? ? ? ? E8", (Il2CppObject* _this))
 
-RESOLVE_BY_OFFSET(void, VCAnimatorMove_AddVelocity, 0x7B6BD60, (void* _this, int32_t velocityType, Unity::Vector3 velocity, float time, float stopVelocity, bool forceSet, float some_float))
-
+//RESOLVE_BY_OFFSET(void, VCAnimatorMove_AddVelocity, 0x7B6BD60, (void* _this, int32_t velocityType, Unity::Vector3 velocity, float time, float stopVelocity, bool forceSet, float some_float))
 // private void [A-Z]{11}\(\); // RVA: 0x7
-RESOLVE_BY_OFFSET(void, VCAnimatorMove_DrownWater, 0x7B6C110, (void* _this))
+//RESOLVE_BY_OFFSET(void, VCAnimatorMove_DrownWater, 0x7B6C110, (void* _this))
 
 RESOLVE_BY_XREF_SIGNATURE(void, NullReferenceException, "E8 ? ? ? ? 83 FB ? 7F ? 48 8D 74 24", ())
+//public virtual Void ClosePage();
+
 RESOLVE_BY_SIGNATURE(void, BasePageContext_ClosePage, "56 48 83 EC ? 48 89 CE 80 3D ? ? ? ? 00 48 8B 05 ? ? ? ? 75 ? 48 8B 80 ? ? ? ? 48 85 C0 74 ? 48 8B 56", (void* _this))
+
 
 //public static Single CalcCurrentGroundHeight(Single x, Single z);
 //RESOLVE_BY_OFFSET(float, Miscs_CalcCurrentGroundHeight, 0xF4A9EB0, (float x, float z))
