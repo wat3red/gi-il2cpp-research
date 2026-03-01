@@ -1,17 +1,4 @@
-#define IMGUI_DEFINE_MATH_OPERATORS
-#define _CRT_SECURE_NO_WARNINGS
-
 #include "costume_changer.h"
-
-#include <game_api/include.h>
-#include <logger/logger.h>
-#include <config/imgui_config.h>
-#include <config/config.h>
-
-#include <imgui/imgui.h>
-#include <minhook/include/MinHook.h>
-#include <imgui/imgui_internal.h>
-
 #include <unordered_map>
 
 namespace features
@@ -184,6 +171,19 @@ namespace features
 
 	struct AvatarExcelConfig {};
 
+	// 6.4
+	// Proto.SceneAvatarInfo : 
+	// Proto.SceneTeamUpdateNotify : 
+	// Proto.SceneTeamAvatar : 
+	// Proto.AvatarChangeCostumeRsp : 
+	// Proto.AvatarDataNotify : HMGBNPJDCKI 
+	// Proto.AvatarInfo : ODEBHPAEMNF
+	// OnAvatarDataNotify : 
+	// MoleMole.Config.AvatarExcelConfig : 
+	// SimpleSafeUInt32 : 
+	// MoleMole.PlayerModule : 
+
+	// 6.3:
 	// Proto.SceneAvatarInfo : MMKPLKAMPOE
 	// Proto.SceneTeamUpdateNotify : JFAKGAMNMHC
 	// Proto.SceneTeamAvatar : EPMCGHOMOOL
@@ -197,7 +197,6 @@ namespace features
 	void(*PlayerModule_OnAvatarDataNotify)(void* _this, Proto::AvatarDataNotify* notify);
 	void hPlayerModule_OnAvatarDataNotify(void* _this, Proto::AvatarDataNotify* notify) {
 		Log("[AvatarNotify] _this=%p notify=%p\n", _this, notify);
-
 		Unity::List<Proto::AvatarInfo*>* list = notify->GetAvatarList()->values;
 
 		for (size_t i = 0; i < list->size; i++) {
@@ -206,13 +205,18 @@ namespace features
 			Log("[%zu] val=%p\n", i, avatar);
 
 			Config::CostumeMapping* mapping = config.costume_changer.GetMapping(*avatar->ConfigID());
+			Log("%d\n", __LINE__);
+
 			if (mapping) {
 				if (mapping->costume_id != 0) {
+					// 6.3 0xD8
 					*avatar->CostumeID() = mapping->costume_id;
 				}
-				if (mapping->flycloak_id != 0) {
-					*avatar->FlycloakID() = mapping->flycloak_id;
-				}
+				//if (mapping->flycloak_id != 0) {
+				//	Log("%d\n", __LINE__);
+				//	// 6.3 0xC8
+				//	*avatar->FlycloakID() = mapping->flycloak_id;
+				//}
 			}
 		}
 
@@ -229,7 +233,7 @@ namespace features
 	void CollectItems() {
 		// second parameter is AvatarCostumeExcelConfig
 		// public UInt64 [A-Z]{11}\([A-Z]{11} [A-Z]{11}, [A-Z]{11} [A-Z]{11}, Boolean [A-Z]{11}\);
-		auto costumes = (((Unity::Dictionary<uint32_t, AvatarCostumeExcelConfig*> *(*)())(g_game_base + 0x8B61E40))());
+		auto costumes = (((Unity::Dictionary<uint32_t, AvatarCostumeExcelConfig*> *(*)())(g_game_base + 0x9FF1D70))());
 		if (costumes) {
 			auto costumes_vector = costumes->to_vector();
 			for (size_t i = 0; i < costumes_vector.size(); i++) {
@@ -240,9 +244,9 @@ namespace features
 		}
 
 		// you need to find AvatarCostumeExcelConfig first, then you should search for all 3 strings that are present in there to find a class with 3 string, a boolean, 2 uints and 2 safe values
-		// or just search search for '55 41 57 41 56 41 55 41 54 56 57 53 48 81 EC ? ? ? ? 48 8D AC 24 ? ? ? ? 48 C7 45 ? ? ? ? ? 48 85 D2 0F 84 ? ? ? ? 49 89 D6 48 89 CF 48 83 7A ? 00 74 ? 4C 89 F1 BA ? ? ? ? E8 ? ? ? ? 49 8B 46 ? 48 85 C0 0F 84 ? ? ? ? 41 8B 4E ? 3B 48 ? 0F 83 ? ? ? ? 48 63 D1 44 0F B7 7C 10 ? 83 C1 ? 41 89 4E ? 41 81 C7 ? ? ? ? 41 F6 C7 ? 0F 84 ? ? ? ? 48 C7 45 ? 00 00 00 00 48 C7 45 ? 00 00 00 00 49 83 7E ? 00 74 ? 4C 89 F1 BA ? ? ? ? E8 ? ? ? ? 49 8B 46 ? 48 85 C0 0F 84 ? ? ? ? 41 8B 4E ? 3B 48 ? 0F 83 ? ? ? ? 48 63 D1 44 0F B7 6C 10'
+		// or just search search for '55 41 57 41 56 41 55 41 54 56 57 53 48 81 EC ? ? ? ? 48 8D AC 24 ? ? ? ? 48 C7 45 ? ? ? ? ? 48 85 D2 0F 84 ? ? ? ? 49 89 D5 48 89 CF 48 83 7A ? 00 74 ? 4C 89 E9 BA ? ? ? ? E8 ? ? ? ? 49 8B 45 ? 48 85 C0 0F 84 ? ? ? ? 41 8B 4D ? 3B 48 ? 0F 83 ? ? ? ? 49 8D 5D'
 		// to find a method in AvatarFlycloakExcelConfig
-		auto flycloaks = (((Unity::Dictionary<uint32_t, AvatarFlycloakExcelConfig*> *(*)())(g_game_base + 0xE805CA0))());
+		auto flycloaks = (((Unity::Dictionary<uint32_t, AvatarFlycloakExcelConfig*> *(*)())(g_game_base + 0xC27B6F0))());
 		if (flycloaks) {
 			auto flycloaks_vector = flycloaks->to_vector();
 			for (size_t i = 0; i < flycloaks_vector.size(); i++) {
@@ -251,7 +255,7 @@ namespace features
 		}
 
 		// search for ' avatarConfig)', this parametr type is AvatarExcelConfig
-		auto avatars = (((Unity::Dictionary<uint32_t, Il2CppObject*> *(*)())(g_game_base + 0xD4CD380))());
+		auto avatars = (((Unity::Dictionary<uint32_t, Il2CppObject*> *(*)())(g_game_base + 0x104D7C70))());
 		if (avatars) {
 			auto avatars_vector = avatars->to_vector();
 			for (size_t i = 0; i < avatars_vector.size(); i++) {
@@ -259,6 +263,8 @@ namespace features
 			}
 		}
 	}
+
+	// 0x38 to decimal is 56
 
 	// private void [A-Z]{11}\([A-Z]{11} [A-Z]{11}, LBBDEIFADJM [A-Z]{11}, uint32 [A-Z]{11}, uint32 [A-Z]{11}\) // 6.3 
 	// private void [A-Z]{11}\([A-Z]{11} [A-Z]{11}, JNJPFIJANIF [A-Z]{11}, uint32 [A-Z]{11}, uint32 [A-Z]{11}\) // 6.2
@@ -271,14 +277,26 @@ namespace features
 			CollectItems();
 			initialized = true;
 		}
+		Log("%d\n", __LINE__);
 
-		auto scene_avatar = (Proto::SceneAvatarInfo*)entity->Entity();
+		Proto::SceneAvatarInfo* scene_avatar = (Proto::SceneAvatarInfo*)entity->Entity();
 		Config::CostumeMapping* mapping = config.costume_changer.GetMapping(*scene_avatar->ConfigID());
+		Log("%d\n", __LINE__);
+
+		Log("*scene_avatar->ConfigID() %d\n", *scene_avatar->ConfigID());
+
+
 		if (mapping) {
+			Log("%d\n", __LINE__);
+
 			if (mapping->costume_id != 0) {
+				Log("%d\n", __LINE__);
+
 				*scene_avatar->CostumeID() = mapping->costume_id;
 			}
 			if (mapping->flycloak_id != 0) {
+				Log("%d\n", __LINE__);
+
 				*scene_avatar->FlycloakID() = mapping->flycloak_id;
 			}
 		}
@@ -321,8 +339,6 @@ namespace features
 	void CostumeChanger::OnUpdate() {
 		if (reload) {
 			MoleMole::PlayerModule* player_module = MoleMole::PlayerModule::Instance();
-			//((void(*)(MoleMole::PlayerModule*, int32_t))(g_game_base + 0xE7B9290))(player_module, 1); // TryClientReconnect
-			//((void(*)(MoleMole::PlayerModule*))(g_game_base + 0xE7DE970))(player_module); // NeedReloadScene
 			Il2CppObject* network_manager = MoleMole::SingletonManager::GetSingletonInstance(version_constants::beebyte::network_manager_class);
 			NetworkManager_HandleEnetLoginUnfinished(network_manager);
 			reload = false;

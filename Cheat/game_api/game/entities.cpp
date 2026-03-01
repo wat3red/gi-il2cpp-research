@@ -9,7 +9,8 @@ EntityManager* EntityManager::Instance() {
 }
 
 std::vector<BaseEntity*> EntityManager::GetEntities() {
-	Unity::List<BaseEntity*>* entityList = EntityManager_GetEntities(this);
+	static int32_t offset = Mem::Signature("4C 8B BA ? ? ? ? 4D 85 FF 0F 84 ? ? ? ? 48 89 55 ? 41 8B 77").FindDisp();
+	Unity::List<BaseEntity*>* entityList = *(Unity::List<BaseEntity*>**)((uintptr_t)this + offset);
 
 	std::vector<BaseEntity*> vector;
 	if (entityList) {
@@ -31,7 +32,8 @@ BaseEntity* MoleMole::EntityManager::GetValidEntity(uint32_t runtimeID) {
 }
 
 Unity::GameObject* BaseEntity::GetGameObject() {
-	return BaseEntity_get_gameObject(this);
+	static int32_t offset = Mem::Signature("48 8B 4E ? 48 85 C9 74 ? 48 83 79 ? 00 74 ? E8 ? ? ? ? 80 BE ? ? ? ? 00").FindDisp();
+	return *(Unity::GameObject**)((uintptr_t)this + offset);
 }
 
 EntityType BaseEntity::GetType() {

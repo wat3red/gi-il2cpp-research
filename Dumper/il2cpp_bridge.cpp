@@ -39,8 +39,8 @@ namespace Il2Cpp
 
 	void Initialize() {
 		class_get_methods = (decltype(class_get_methods))((uintptr_t)Mem::Signature("E8 ? ? ? ? 48 85 C0 74 ? 48 8D 5D").ScanXref());
-		class_get_name = (decltype(class_get_name))((uintptr_t)Mem::Signature("E8 ? ? ? ? 45 33 F6 C7 85").ScanXref());
-		class_get_namespace = (decltype(class_get_namespace))((uintptr_t)Mem::Signature("E8 ? ? ? ? 49 C7 C7 ? ? ? ? 4D 8B C7").ScanXref());
+		class_get_name = (decltype(class_get_name))((uintptr_t)Mem::Signature("E8 ? ? ? ? 48 8B F8 C7 45 ? ? ? ? ? 48 8B 45").ScanXref());
+		class_get_namespace = (decltype(class_get_namespace))((uintptr_t)Mem::Signature("E8 ? ? ? ? 48 8B 15 ? ? ? ? 48 8B C8 48 8B F8").ScanXref());
 		class_get_fields = (decltype(class_get_fields))((uintptr_t)Mem::Signature("E8 ? ? ? ? 48 85 C0 75 ? E9 ? ? ? ? 89 E8").ScanXref());
 		class_from_type = (decltype(class_from_type))((uintptr_t)Mem::Signature("E8 ? ? ? ? 48 89 C6 44 0F B7 B0").ScanXref());
 		field_get_name = (decltype(field_get_name))((uintptr_t)Mem::Signature("E8 ? ? ? ? 48 89 C3 EB ? 83 BD").ScanXref());
@@ -49,7 +49,7 @@ namespace Il2Cpp
 		field_get_offset = (decltype(field_get_offset))((uintptr_t)Mem::Signature("E8 ? ? ? ? 49 03 45").ScanXref());
 		method_get_name = (decltype(method_get_name))((uintptr_t)Mem::Signature("E8 ? ? ? ? 48 8B CE 48 2B C6").ScanXref());
 		method_get_param_count = (decltype(method_get_param_count))((uintptr_t)Mem::Signature("E8 ? ? ? ? 3B C5 75").ScanXref());
-		method_get_param_name = (decltype(method_get_param_name))((uintptr_t)Mem::Signature("56 48 83 EC ? 0F B6 41 ? 39 D0 76 ? 89 D6 48 8B 51 ? 48 85 D2 74 ? 48 B8 ? ? ? ? ? ? ? ? 48 33 42 ? 74 ? 89 F1 ? ? ? ? 48 8B 44 C8").Scan());
+		method_get_param_name = (decltype(method_get_param_name))((uintptr_t)Mem::Signature("56 48 83 EC ? 0F B6 41 ? 39 D0 76 ? 89 D6 48 8B 51 ? 48 85 D2 74 ? 48 B8 ? ? ? ? ? ? ? ? 48 03 42 ? 74 ? 89 F1 ? ? ? ? ? ? ? ? 48 83 C4").Scan());
 		method_get_param = (decltype(method_get_param))((uintptr_t)Mem::Signature("E8 ? ? ? ? 48 8B C8 E8 ? ? ? ? 4C 8B 4E").ScanXref());
 		method_get_return_type = (decltype(method_get_return_type))((uintptr_t)Mem::Signature("E8 ? ? ? ? 48 83 C4 ? 48 89 C7 0F B6 47").ScanXref());
 		type_get_name_tmp = (decltype(type_get_name_tmp))((uintptr_t)Mem::Signature("E8 ? ? ? ? 4C 8D 05 ? ? ? ? 48 8D 4D ? 48 8D 55 ? E8 ? ? ? ? 48 89 E9 4C 8D 45").ScanXref());
@@ -67,13 +67,12 @@ namespace Il2Cpp
 
 	uint32_t GetClassSize(Il2CppClass* klass) {
 		// 0F B7 9F ? ? ? ? 48 89 F9
-		return (uint32_t)((*(int16_t*)((uintptr_t)klass + 0xB8)) - 4);
+		return (uint32_t)((*(int16_t*)((uintptr_t)klass + 0xBC)) - 4);
 	}
 
 	Il2CppClass* GetClassParent(Il2CppClass* klass) {
-#define METADATA_BASE_POINTER 0x4E196F0 // 48 8B 05 ? ? ? ? ? ? ? 4D 39 C8 75 ? 48 83 C1
-		// unchanged since 6.2
-		uint32_t parentToken = *(uint32_t*)((uintptr_t)klass + 0xA4); // 41 8B 87 ? ? ? ? 41 BF 00 00 00 00
+#define METADATA_BASE_POINTER 0x4EEA930 // 48 8B 05 ? ? ? ? ? ? ? 4D 39 C8 75 ? 48 83 C1
+		uint32_t parentToken = *(uint32_t*)((uintptr_t)klass + 0xA0); // 41 8B 86 ? ? ? ? 41 BE 00 00 00 00
 		if (!parentToken) return nullptr;
 		return (Il2CppClass*)(**(uintptr_t**)(Config::GameBase + METADATA_BASE_POINTER) + parentToken);
 #undef METADATA_BASE_POINTER
@@ -99,7 +98,7 @@ namespace Il2Cpp
 
 	Il2CppType* GetClassType(Il2CppClass* klass) {
 		// 48 83 C6 ? 48 8D 7D ? 48 89 F9
-		return (Il2CppType*)((uintptr_t)klass + 0x48);
+		return (Il2CppType*)((uintptr_t)klass + 0x68);
 	}
 
 	int16_t GetClassGenericContainerIndex(Il2CppClass* klass) {
@@ -117,19 +116,18 @@ namespace Il2Cpp
 
 	uint16_t GetMethodFlags(MethodInfo* method) {
 		// 0F B7 43 ? 89 C1
-		return *(uint16_t*)((uintptr_t)method + 0x2C);
+		return *(uint16_t*)((uintptr_t)method + 0x28);
 	}
 
 	bool GetMethodIsGenric(MethodInfo* method) {
 		// 41 F6 46 ? ? 0F 84 ? ? ? ? 48 89 D7
-		return ((*(uint8_t*)(method + 0x2F) & 8) != 0);
+		return ((*(uint8_t*)(method + 0x2F) & 4) != 0);
 	}
 
 	uintptr_t GetMethodPointer(MethodInfo* method) {
-		// unchanged since 6.2
-		// 48 83 78 ? 00 74 ? 48 83 C4 ? 5E 5D
-		// i think this is better: FF 50 ? 48 8B 4C 24 ? 48 89 FA
-		return *(uintptr_t*)((uintptr_t)method + 0x8);
+		// to find whole function: 55 56 48 83 EC ? 48 8D 6C 24 ? 48 C7 45 ? ? ? ? ? F6 41
+		// 6.3 find access to the field: 48 83 78 ? 00 74 ? 48 83 C4 ? 5E 5D
+		return *(uintptr_t*)((uintptr_t)method);
 	}
 
 	std::string GetTypeName(Il2CppType* type) {

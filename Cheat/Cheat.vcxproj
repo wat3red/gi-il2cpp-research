@@ -162,6 +162,7 @@
     <ClInclude Include="features\features.h" />
     <ClInclude Include="features\game_speed.h" />
     <ClInclude Include="features\god_mode.h" />
+    <ClInclude Include="features\infinite_stamina.h" />
     <ClInclude Include="features\kill_aura.h" />
     <ClInclude Include="features\map_teleport.h" />
     <ClInclude Include="features\network_analyzer.h" />
@@ -218,6 +219,7 @@
     <ClCompile Include="features\features.cpp" />
     <ClCompile Include="features\game_speed.cpp" />
     <ClCompile Include="features\god_mode.cpp" />
+    <ClCompile Include="features\infinite_stamina.cpp" />
     <ClCompile Include="features\kill_aura.cpp" />
     <ClCompile Include="features\map_teleport.cpp" />
     <ClCompile Include="features\network_analyzer.cpp" />

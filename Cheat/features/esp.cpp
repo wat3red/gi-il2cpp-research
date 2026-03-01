@@ -1,17 +1,9 @@
-﻿#define IMGUI_DEFINE_MATH_OPERATORS
+﻿#include "esp.h"
 
-#include "esp.h"
-
-#include <game_api/include.h>
-#include <logger/logger.h>
-#include <config/imgui_config.h>
-#include <config/config.h>
-
-#include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
 
 #include <string>
-#include <mutex> // Required for thread safety
+#include <mutex>
 
 // Mutex to prevent reading while writing
 std::mutex esp_mutex;

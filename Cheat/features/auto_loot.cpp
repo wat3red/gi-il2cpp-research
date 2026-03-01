@@ -1,15 +1,4 @@
-#define IMGUI_DEFINE_MATH_OPERATORS
-
 #include "auto_loot.h"
-
-#include <game_api/include.h>
-#include <logger/logger.h>
-#include <config/imgui_config.h>
-#include <config/config.h>
-
-#include <imgui/imgui.h>
-#include <minhook/include/MinHook.h>
-#include <imgui/imgui_internal.h>
 
 namespace features
 {

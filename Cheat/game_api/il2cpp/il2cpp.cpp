@@ -13,7 +13,7 @@ struct AssemblyVector {
 
 Il2CppAssembly** il2cpp_domain_get_assemblies(size_t* size) {
 	// xref: 48 8B 3D ? ? ? ? 48 39 DF
-	auto* vec = reinterpret_cast<AssemblyVector*>(g_game_base + 0x4E195F8);
+	auto* vec = reinterpret_cast<AssemblyVector*>(g_game_base + 0x4EEA838);
 	*size = static_cast<size_t>(vec->end - vec->begin);
 	return vec->begin;
 }
@@ -98,9 +98,9 @@ Il2CppClass* Il2Cpp::Class::FromName(const char* namespaceName, const char* clas
 }*/
 
 void* Il2Cpp::Method::GetMethodPointer(MethodInfo* method) {
-	// 48 83 78 ? 00 74 ? 48 83 C4 ? 5E 5D
-	// i think this is better: FF 50 ? 48 8B 4C 24 ? 48 89 FA
-	return *(void**)((uintptr_t)method + 0x8);
+	// to find whole function: 55 56 48 83 EC ? 48 8D 6C 24 ? 48 C7 45 ? ? ? ? ? F6 41
+	// 6.3 find access to the field: 48 83 78 ? 00 74 ? 48 83 C4 ? 5E 5D
+	return *(void**)((uintptr_t)method);
 }
 
 /*Il2CppClass* Il2Cpp::Class::FromName(const char* namespaceName, const char* className)

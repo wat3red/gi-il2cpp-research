@@ -16,17 +16,18 @@ MapModule* MapModule::Instance() {
 //	return *(Unity::Dictionary<uint32_t, Unity::Dictionary<uint32_t, ScenePointData>*>**)((uintptr_t)this + 0x50);
 //}
 
-//Unity::Vector3 MoleMole::ConfigScenePoint::GetTranPos() {
-//	return *(Unity::Vector3*)((uintptr_t)this + 0x18);
-//}
+Unity::Vector3 MoleMole::ConfigScenePoint::GetTranPos() {
+	return *(Unity::Vector3*)((uintptr_t)this + 0x18);
+}
+
+uint32_t MoleMole::MapManager::GetMapSceneID() {
+	return *(uint32_t*)((uintptr_t)this + 0x110);
+}
 
 MapManager* MoleMole::MapManager::Instance() {
 	return (MapManager*)SingletonManager::GetSingletonInstance(version_constants::beebyte::map_manager_class);
 }
 
-//uint32_t MoleMole::MapManager::GetMapSceneID() {
-//	return *(uint32_t*)((uintptr_t)this + 0x110); 
-//}
 
 UIManager* MoleMole::UIManager::Instance() {
 	return (UIManager*)SingletonManager::GetSingletonInstance(version_constants::beebyte::ui_manager_class);

@@ -1,8 +1,7 @@
 #pragma once
+
 #include "feature.h"
-
 #include <vector>
-
 
 namespace features
 {

@@ -251,121 +251,210 @@ public:
 NetworkBlocker* g_blocker = nullptr;
 
 
-#include <DbgHelp.h>
-#pragma comment(lib, "Dbghelp.lib")
+//#pragma comment(lib, "Dbghelp.lib")
+//#pragma comment(lib, "Psapi.lib")
 
-LONG WINAPI CrashHandler(EXCEPTION_POINTERS* ExceptionInfo);
+static LONG g_inCrashHandler = 0;
 
-void PrintStackTrace(CONTEXT* ctx)
-{
-	HANDLE process = GetCurrentProcess();
-	HANDLE thread = GetCurrentThread();
+// Exception codes worth logging (extend as needed)
+static bool ShouldLog(DWORD code) {
+	switch (code) {
+	case EXCEPTION_ACCESS_VIOLATION:
+	/*case EXCEPTION_ILLEGAL_INSTRUCTION:
+	case EXCEPTION_STACK_OVERFLOW:
+	case EXCEPTION_INT_DIVIDE_BY_ZERO:
+	case EXCEPTION_PRIV_INSTRUCTION:
+	case EXCEPTION_ARRAY_BOUNDS_EXCEEDED:*/
+	//case 0xE06D7363: // C++ exception (SEH wrapper)
+		return true;
+	default:
+		return false;
+	}
+}
 
-	SymInitialize(process, NULL, TRUE);
-	SymSetOptions(SYMOPT_LOAD_LINES | SYMOPT_UNDNAME);
+static const char* ExceptionName(DWORD code) {
+	switch (code) {
+	case EXCEPTION_ACCESS_VIOLATION:        return "ACCESS_VIOLATION";
+	case EXCEPTION_ILLEGAL_INSTRUCTION:     return "ILLEGAL_INSTRUCTION";
+	case EXCEPTION_STACK_OVERFLOW:          return "STACK_OVERFLOW";
+	case EXCEPTION_INT_DIVIDE_BY_ZERO:      return "INT_DIVIDE_BY_ZERO";
+	case EXCEPTION_PRIV_INSTRUCTION:        return "PRIV_INSTRUCTION";
+	case EXCEPTION_ARRAY_BOUNDS_EXCEEDED:   return "ARRAY_BOUNDS_EXCEEDED";
+	case 0xE06D7363:                        return "CPP_EXCEPTION";
+	default:                                return "UNKNOWN";
+	}
+}
 
-	STACKFRAME64 frame{};
+// Resolve a VA to "ModuleName.dll+0xOFFSET [symbol+disp] (file:line)"
+// For il2cpp, symbol resolution usually fails -> module+offset is the money shot
+static void ResolveAddress(uintptr_t addr, char* out, size_t outSz) {
+	// --- module + offset (always works) ---
+	HMODULE hMod = nullptr;
+	GetModuleHandleExA(
+		GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+		GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+		(LPCSTR)addr, &hMod);
 
-	DWORD machineType = IMAGE_FILE_MACHINE_AMD64;
-	frame.AddrPC.Offset = ctx->Rip;
-	frame.AddrFrame.Offset = ctx->Rbp;
-	frame.AddrStack.Offset = ctx->Rsp;
-
-	frame.AddrPC.Mode = AddrModeFlat;
-	frame.AddrFrame.Mode = AddrModeFlat;
-	frame.AddrStack.Mode = AddrModeFlat;
-
-	Log("\n==== STACK TRACE ====\n");
-
-	for (int i = 0; i < 64; i++)
-	{
-		if (!StackWalk64(machineType, process, thread, &frame, ctx, NULL,
-			SymFunctionTableAccess64, SymGetModuleBase64, NULL))
-			break;
-
-		DWORD64 addr = frame.AddrPC.Offset;
-		if (!addr) break;
-
-		char buffer[sizeof(SYMBOL_INFO) + 256];
-		PSYMBOL_INFO symbol = (PSYMBOL_INFO)buffer;
-		symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
-		symbol->MaxNameLen = 255;
-
-		DWORD64 displacement = 0;
-
-		if (SymFromAddr(process, addr, &displacement, symbol))
-		{
-			IMAGEHLP_LINE64 line{};
-			line.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
-			DWORD lineDisplacement = 0;
-
-			if (SymGetLineFromAddr64(process, addr, &lineDisplacement, &line))
-			{
-				Log("#%02d 0x%p %s + 0x%llx (%s:%lu)\n",
-					i,
-					(void*)addr,
-					symbol->Name,
-					displacement,
-					line.FileName,
-					line.LineNumber);
-			}
-			else
-			{
-				Log("#%02d 0x%p %s + 0x%llx\n",
-					i,
-					(void*)addr,
-					symbol->Name,
-					displacement);
-			}
-		}
-		else
-		{
-			Log("#%02d 0x%p\n", i, (void*)addr);
-		}
+	char modName[MAX_PATH] = "<unknown>";
+	if (hMod) {
+		GetModuleBaseNameA(GetCurrentProcess(), hMod, modName, sizeof(modName));
 	}
 
-	Log("==== END STACK TRACE ====\n\n");
+	uintptr_t offset = hMod ? (addr - (uintptr_t)hMod) : addr;
 
-	SymCleanup(process);
+	// --- symbol (works if PDB/export available) ---
+	constexpr size_t kSymInfoSz = sizeof(SYMBOL_INFO) + MAX_SYM_NAME;
+	alignas(SYMBOL_INFO) char symBuf[kSymInfoSz]{};
+	auto* sym = reinterpret_cast<SYMBOL_INFO*>(symBuf);
+	sym->SizeOfStruct = sizeof(SYMBOL_INFO);
+	sym->MaxNameLen = MAX_SYM_NAME;
+
+	DWORD64      disp64 = 0;
+	DWORD        dispLn = 0;
+	IMAGEHLP_LINE64 line{};
+	line.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
+
+	bool hasSymbol = SymFromAddr(GetCurrentProcess(), (DWORD64)addr, &disp64, sym) != 0;
+	bool hasLine = hasSymbol &&
+		SymGetLineFromAddr64(GetCurrentProcess(), (DWORD64)addr, &dispLn, &line) != 0;
+
+	if (hasLine)
+		_snprintf_s(out, outSz, _TRUNCATE,
+			"%s+0x%llX  [%s+0x%llX]  (%s:%lu)",
+			modName, (unsigned long long)offset,
+			sym->Name, (unsigned long long)disp64,
+			line.FileName, line.LineNumber);
+	else if (hasSymbol)
+		_snprintf_s(out, outSz, _TRUNCATE,
+			"%s+0x%llX  [%s+0x%llX]",
+			modName, (unsigned long long)offset,
+			sym->Name, (unsigned long long)disp64);
+	else
+		_snprintf_s(out, outSz, _TRUNCATE,
+			"%s+0x%llX",
+			modName, (unsigned long long)offset);
 }
 
-LONG WINAPI CrashHandler(EXCEPTION_POINTERS* ExceptionInfo) {
-	Log("\n===== CRASH DETECTED =====\n");
-	Log("Exception code: 0x%X\n", ExceptionInfo->ExceptionRecord->ExceptionCode);
-	Log("Exception address: 0x%p\n", ExceptionInfo->ExceptionRecord->ExceptionAddress);
+LONG WINAPI VectoredHandler(PEXCEPTION_POINTERS pEx) {
+	DWORD code = pEx->ExceptionRecord->ExceptionCode;
 
-	PrintStackTrace(ExceptionInfo->ContextRecord);
+	if (!ShouldLog(code))
+		return EXCEPTION_CONTINUE_SEARCH;
 
-	if (g_log_file)
-		fflush(g_log_file);
+	// Re-entrancy guard (e.g. stack overflow inside this handler)
+	if (InterlockedCompareExchange(&g_inCrashHandler, 1, 0) != 0)
+		return EXCEPTION_CONTINUE_SEARCH;
 
-	return EXCEPTION_EXECUTE_HANDLER;
+	CONTEXT ctx = *pEx->ContextRecord; // local copy so StackWalk64 can mutate it
+
+	// ── Header ──────────────────────────────────────────────────────────────
+	Log("========== CRASH ==========\n");
+	Log("Exception : 0x%08X (%s)\n", code, ExceptionName(code));
+	Log("Address   : 0x%p\n", (void*)pEx->ExceptionRecord->ExceptionAddress);
+
+	if (code == EXCEPTION_ACCESS_VIOLATION && pEx->ExceptionRecord->NumberParameters >= 2) {
+		const char* op = (pEx->ExceptionRecord->ExceptionInformation[0] == 1) ? "write" : "read";
+		Log("AV Detail : %s at 0x%p\n",
+			op, (void*)pEx->ExceptionRecord->ExceptionInformation[1]);
+	}
+
+	// ── Registers (x64) ─────────────────────────────────────────────────────
+	Log("Registers :\n");
+	Log("  RAX=%016llX  RBX=%016llX  RCX=%016llX  RDX=%016llX\n",
+		ctx.Rax, ctx.Rbx, ctx.Rcx, ctx.Rdx);
+	Log("  RSI=%016llX  RDI=%016llX  RBP=%016llX  RSP=%016llX\n",
+		ctx.Rsi, ctx.Rdi, ctx.Rbp, ctx.Rsp);
+	Log("  R8 =%016llX  R9 =%016llX  R10=%016llX  R11=%016llX\n",
+		ctx.R8, ctx.R9, ctx.R10, ctx.R11);
+	Log("  R12=%016llX  R13=%016llX  R14=%016llX  R15=%016llX\n",
+		ctx.R12, ctx.R13, ctx.R14, ctx.R15);
+	Log("  RIP=%016llX  EFL=%08X\n", ctx.Rip, ctx.EFlags);
+
+	// ── Stack trace ─────────────────────────────────────────────────────────
+	Log("Stack trace:\n");
+
+	STACKFRAME64 sf{};
+	sf.AddrPC.Offset = ctx.Rip;
+	sf.AddrPC.Mode = AddrModeFlat;
+	sf.AddrFrame.Offset = ctx.Rbp;
+	sf.AddrFrame.Mode = AddrModeFlat;
+	sf.AddrStack.Offset = ctx.Rsp;
+	sf.AddrStack.Mode = AddrModeFlat;
+
+	HANDLE hProcess = GetCurrentProcess();
+	HANDLE hThread = GetCurrentThread();
+
+	// ── RIP=0 recovery ──────────────────────────────────────────────────────────
+	// When a call through a null pointer fires, RIP=0 and the real return address
+	// is the top of the stack (RSP+0). Seed the frame manually so StackWalk64
+	// can unwind the actual call chain.
+	if (sf.AddrPC.Offset == 0 && ctx.Rsp != 0) {
+		uintptr_t retAddr = 0;
+		SIZE_T bytesRead = 0;
+
+		if (ReadProcessMemory(hProcess, (LPCVOID)ctx.Rsp, &retAddr, sizeof(retAddr), &bytesRead)
+			&& bytesRead == sizeof(retAddr)
+			&& retAddr != 0)
+		{
+			Log("  [RIP=0 recovery] return addr from RSP: 0x%016llX\n",
+				(unsigned long long)retAddr);
+
+			// Log frame 0 as the null call site context (RSP itself)
+			char resolved[512];
+			ResolveAddress(retAddr, resolved, sizeof(resolved));
+			Log("  #0   0x%016llX  %s  <-- CALLER of null ptr\n",
+				(unsigned long long)retAddr, resolved);
+
+			// Advance past the return address and let StackWalk64 continue
+			ctx.Rip = retAddr;
+			ctx.Rsp += sizeof(uintptr_t);
+			sf.AddrPC.Offset = retAddr;
+			sf.AddrStack.Offset = ctx.Rsp;
+			sf.AddrFrame.Offset = ctx.Rbp;
+		}
+		else {
+			Log("  [RIP=0] Could not recover return address from RSP=0x%016llX\n",
+				(unsigned long long)ctx.Rsp);
+		}
+	}
+	// ── Normal walk from frame 1 onward ─────────────────────────────────────────
+	constexpr int kMaxFrames = 62; // 64 total - 2 already handled above
+	char resolved[512];
+
+	for (int frame = 1; frame <= kMaxFrames; ++frame) {
+		BOOL ok = StackWalk64(
+			IMAGE_FILE_MACHINE_AMD64,
+			hProcess, hThread,
+			&sf, &ctx,
+			nullptr,
+			SymFunctionTableAccess64,
+			SymGetModuleBase64,
+			nullptr);
+
+		if (!ok || sf.AddrPC.Offset == 0)
+			break;
+
+		ResolveAddress((uintptr_t)sf.AddrPC.Offset, resolved, sizeof(resolved));
+		Log("  #%-2d  0x%016llX  %s\n",
+			frame, (unsigned long long)sf.AddrPC.Offset, resolved);
+	}
+
+	Log("===========================\n");
+
+	InterlockedExchange(&g_inCrashHandler, 0);
+	return EXCEPTION_CONTINUE_SEARCH; // let the game/OS handle it normally
 }
-
-LPTOP_LEVEL_EXCEPTION_FILTER(*oSetUnhandledExceptionFilter)(LPTOP_LEVEL_EXCEPTION_FILTER lpTopLevelExceptionFilter);
-LPTOP_LEVEL_EXCEPTION_FILTER WINAPI hSetUnhandledExceptionFilter(LPTOP_LEVEL_EXCEPTION_FILTER lpTopLevelExceptionFilter) {
-	Log("Game tried to override exception filter\n");
-	oSetUnhandledExceptionFilter(CrashHandler);
-	return NULL;
-}
-
 // DLL entry
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lp_reserved)
 {
 	if (ul_reason_for_call == DLL_PROCESS_ATTACH) {
-		/*SetUnhandledExceptionFilter(CrashHandler);
-		AddVectoredExceptionHandler(1, [](PEXCEPTION_POINTERS ExceptionInfo) -> LONG {
-			Log("Vectored exception: 0x%X at 0x%p\n",
-				ExceptionInfo->ExceptionRecord->ExceptionCode,
-				ExceptionInfo->ExceptionRecord->ExceptionAddress);
-			return EXCEPTION_CONTINUE_SEARCH;
-			});*/
+		SymInitialize(GetCurrentProcess(), NULL, TRUE);
+		SymSetOptions(SYMOPT_LOAD_LINES | SYMOPT_UNDNAME | SYMOPT_DEFERRED_LOADS);
+		SymInitialize(GetCurrentProcess(),
+			"srv*C:\\symbols*https://msdl.microsoft.com/download/symbols",
+			TRUE);
 
-		MH_Initialize();
-		MH_CreateHookApi(L"Kernel32", "SetUnhandledExceptionFilter",
-			hSetUnhandledExceptionFilter,
-			(void**)&oSetUnhandledExceptionFilter);
-		MH_EnableHook(MH_ALL_HOOKS);
+		AddVectoredExceptionHandler(1, VectoredHandler);
 
 		DisableThreadLibraryCalls(hModule);
 		g_game_base = (uintptr_t)GetModuleHandle(NULL);
@@ -373,6 +462,8 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lp_reser
 		CreateThread(NULL, 0, StartThread, NULL, 0, NULL);
 	}
 	else if (ul_reason_for_call == DLL_PROCESS_DETACH) {
+		SymCleanup(GetCurrentProcess());
+
 		if (g_blocker) {
 			delete g_blocker;
 			g_blocker = nullptr;

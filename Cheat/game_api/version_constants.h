@@ -5,14 +5,14 @@ namespace version_constants
 {
 	namespace beebyte
 	{
-		constexpr const char* entity_manager_class = "GHGEBKKDDKE"; // private Queue<Dictionary<UInt32,Int32>>
-		constexpr const char* ui_manager_class = "HPDJOMNOHPH"; // private Dictionary<Int32,List<Notify>>
-		constexpr const char* player_module_class = "MHDKIGGLCHD"; // private static MonoUIWaterMask
-		constexpr const char* map_module_class = "BBFIIGJPGMP"; // private QuestEnterDungeonRequest
-		constexpr const char* map_manager_class = "FDAMOCLBAHC"; // private Dictionary<UInt32,Tuple<String,String>>
-		constexpr const char* loading_manager_class = "JAMJFDLKMIC"; // private Void [A-Z]{11}\(UInt32 [A-Z]{11}, IList<[A-Z]{11}> [A-Z]{11}\);
-		constexpr const char* item_module_class = "BFJBDCPBINB"; // public Void [A-Z]{11}\(UInt32 [A-Z]{11}, List<UInt32> [A-Z]{11}, Boolean [A-Z]{11}\);
-		constexpr const char* network_manager_class = "OBJEIFHOBJK"; // public ConfigChannel
+		constexpr const char* entity_manager_class = "IOOEEBGFAIN"; // private Queue<Dictionary<UInt32,Int32>>
+		constexpr const char* ui_manager_class = "DGGLGNIIFJE"; // private Dictionary<Int32,List<Notify>>
+		constexpr const char* player_module_class = "FFKCIEJHLCI"; // private static MonoUIWaterMask
+		constexpr const char* map_module_class = "PJEKOIAKMJM"; // private QuestEnterDungeonRequest
+		constexpr const char* map_manager_class = "CEJAJIPNDNA"; // private Dictionary<UInt32,Tuple<String,String>>
+		constexpr const char* loading_manager_class = "INPMGDILOOP"; // private Void [A-Z]{11}\(UInt32 [A-Z]{11}, IList<[A-Z]{11}> [A-Z]{11}\);
+		constexpr const char* item_module_class = "AKELJJJLBCH"; // public Void [A-Z]{11}\(UInt32 [A-Z]{11}, List<UInt32> [A-Z]{11}, Boolean [A-Z]{11}\);
+		constexpr const char* network_manager_class = "EBNFEFJIBAK"; // public ConfigChannel
 		//constexpr const char* avatar_entity_class = "OBEOOPGNGLK"; // public Void [A-Z]{11}\(Dictionary<Int32,List<[A-Z]{11}>> [A-Z]{11}, Boolean [A-Z]{11}\)
 		//public OBEOOPGNGLK .*\(\)
 	}

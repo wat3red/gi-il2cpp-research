@@ -1,5 +1,14 @@
 #pragma once
 
+#define IMGUI_DEFINE_MATH_OPERATORS
+
+#include <game_api/include.h>
+#include <logger/logger.h>
+#include <config/imgui_config.h>
+#include <config/config.h>
+
+#include <minhook/include/MinHook.h>
+
 class Feature {
 public:
 	virtual void DrawUI() {}			// Called every frame in ImGui thread(menu)

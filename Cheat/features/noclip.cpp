@@ -1,18 +1,4 @@
-﻿#define IMGUI_DEFINE_MATH_OPERATORS
-
-#include "noclip.h"
-
-#include <game_api/include.h>
-#include <logger/logger.h>
-#include <config/imgui_config.h>
-#include <config/config.h>
-
-#include <thread>
-
-#include <imgui/imgui.h>
-#include <minhook/include/MinHook.h>
-#include <imgui/imgui_internal.h>
-#include <game_api/version_constants.h>
+﻿#include "noclip.h"
 
 namespace features
 {
