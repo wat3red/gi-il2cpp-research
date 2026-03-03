@@ -5,23 +5,29 @@
 using namespace MoleMole;
 
 MapModule* MapModule::Instance() {
-	auto a = SingletonManager::GetSingletonInstance(version_constants::beebyte::map_module_class);
-	Log("MapModule::Instance : %p\n", a);
-	Log("il2cpp_class_get_name(a->klass) : %s\n", il2cpp_class_get_name(a->klass));
-
+	//auto a = SingletonManager::GetSingletonInstance(version_constants::beebyte::map_module_class);
+	//Log("MapModule::Instance : %p\n", a);
+	//Log("il2cpp_class_get_name(a->klass) : %s\n", il2cpp_class_get_name(a->klass));
 	return (MapModule*)SingletonManager::GetSingletonInstance(version_constants::beebyte::map_module_class);
+}
+
+Unity::Dictionary<uint32_t, ScenePointData>* MoleMole::MapModule::GetScenePointDics(uint32_t sceneID)
+{
+	return MapModule_GetScenePointDic(this, sceneID);
 }
 
 //Unity::Dictionary<uint32_t, Unity::Dictionary<uint32_t, ScenePointData>*>* MapModule::GetScenePointDics() {
 //	return *(Unity::Dictionary<uint32_t, Unity::Dictionary<uint32_t, ScenePointData>*>**)((uintptr_t)this + 0x50);
 //}
 
-Unity::Vector3 MoleMole::ConfigScenePoint::GetTranPos() {
-	return *(Unity::Vector3*)((uintptr_t)this + 0x18);
+Unity::Vector3& MoleMole::ConfigScenePoint::GetTranPos() {
+	static int32_t offset = Mem::Signature("49 8D 57 ? 41 F7 C4 ? ? ? ? 0F 84 ? ? ? ? C7 42 ? 00 00 00 00").FindDisp();
+	return *(Unity::Vector3*)((uintptr_t)this + offset);
 }
 
 uint32_t MoleMole::MapManager::GetMapSceneID() {
-	return *(uint32_t*)((uintptr_t)this + 0x110);
+	static int32_t offset = Mem::Signature("3B 88 ? ? ? ? 0F 94 C0 48 83 C4 ? C3 31 C0 48 83 C4 ? C3 48 89 CA 48 8B 80 ? ? ? ? 48 8B 88 ? ? ? ? 48 85 C9 74").FindDisp();
+	return *(uint32_t*)((uintptr_t)this + offset);
 }
 
 MapManager* MoleMole::MapManager::Instance() {
@@ -34,7 +40,7 @@ UIManager* MoleMole::UIManager::Instance() {
 }
 
 Unity::Camera* MoleMole::UIManager::GetUICamera() {
-	static int32_t offset = Mem::Signature("48 8B 7E ? 48 85 FF 74 ? 48 83 7F ? 00 74 ? 80 BE ? ? ? ? 00 74 ? 48 8B 8E").FindDisp();
+	static int32_t offset = Mem::Signature("49 8B B7 ? ? ? ? 48 85 F6 74 ? 48 83 7E ? 00 74 ? 48 8B 05").FindDisp();
 	return *(Unity::Camera**)((uintptr_t)this + offset);
 }
 

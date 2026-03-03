@@ -12,9 +12,10 @@ namespace version_constants
 		constexpr const char* map_manager_class = "CEJAJIPNDNA"; // private Dictionary<UInt32,Tuple<String,String>>
 		constexpr const char* loading_manager_class = "INPMGDILOOP"; // private Void [A-Z]{11}\(UInt32 [A-Z]{11}, IList<[A-Z]{11}> [A-Z]{11}\);
 		constexpr const char* item_module_class = "AKELJJJLBCH"; // public Void [A-Z]{11}\(UInt32 [A-Z]{11}, List<UInt32> [A-Z]{11}, Boolean [A-Z]{11}\);
-		constexpr const char* network_manager_class = "EBNFEFJIBAK"; // public ConfigChannel
+		constexpr const char* network_manager_class = "EBNFEFJIBAK"; // public ConfigChannel 
+		constexpr const char* talk_dialog_context_class = "PGLHFCFGJEM"; // private MonoTalkDialog 
+		
 		//constexpr const char* avatar_entity_class = "OBEOOPGNGLK"; // public Void [A-Z]{11}\(Dictionary<Int32,List<[A-Z]{11}>> [A-Z]{11}, Boolean [A-Z]{11}\)
-		//public OBEOOPGNGLK .*\(\)
 	}
 
 	/*

@@ -102,8 +102,12 @@ namespace Il2Cpp
 	}
 	namespace Field
 	{
-		int32_t GetOffset(Il2CppClass* klass, const char* fieldName);
 		int32_t GetOffset(FieldInfo* field);
-		FieldInfo* Find(Il2CppClass* klass, const char* fieldName);
+
+		int32_t GetOffsetFromName(Il2CppClass* klass, const char* fieldName);
+		FieldInfo* FindFromName(Il2CppClass* klass, const char* fieldName);
+		
+		int32_t GetOffsetFromTypeName(Il2CppClass* klass, const char* typeName);
+		FieldInfo* FindFromTypeName(Il2CppClass* klass, const char* typeName);
 	}
 }

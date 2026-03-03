@@ -1,6 +1,9 @@
 
 //RESOLVE_BY_OFFSET(void, LevelSyncCombatPlugin_SendCombatForceSetPos, 0x962BC10, (Il2CppObject* _this, uint32_t runtimeID, Unity::Vector3 targetPos, uint32_t colliderEntityId, uint32_t iceID))
 
+#define COMMA ,
+
+RESOLVE_BY_SIGNATURE(Unity::Dictionary<uint32_t COMMA MoleMole::ScenePointData>*, MapModule_GetScenePointDic, "56 57 53 48 83 EC ? 89 D6 48 89 CF 80 3D ? ? ? ? 00 0F 85 ? ? ? ? 80 3D ? ? ? ? 00 48 8B 05 ? ? ? ? 0F 85 ? ? ? ? 48 8B 98 ? ? ? ? 48 85 DB 74 ? 48 89 D9 89 F2 E8 ? ? ? ? 85 C0 78 ? 48 8B 4B ? 48 85 C9 0F 84 ? ? ? ? 3B 41 ? 73", (MoleMole::MapModule* _this, uint32_t sceneID))
 
 RESOLVE_BY_XREF_SIGNATURE(Il2CppString*, AvatarExcelConfig_GetName, "E8 ? ? ? ? 48 85 F6 0F 84 ? ? ? ? 4C 8B 7C 24", (Il2CppObject* _this))
 
@@ -131,12 +134,14 @@ RESOLVE_BY_XREF_SIGNATURE(Il2CppClass*, MetadataCache_GetTypeInfoFromTypeDefinit
 RESOLVE_BY_SIGNATURE(Il2CppString*, il2cpp_string_new_len, "55 41 57 41 56 56 57 53 48 83 EC ? 48 8D 6C 24 ? 48 C7 45 ? ? ? ? ? 49 89 CF 41 89 D6", (const char* str, uint32_t length))
 RESOLVE_BY_XREF_SIGNATURE(const char*, il2cpp_class_get_name, "E8 ? ? ? ? 48 8B F8 C7 45 ? ? ? ? ? 48 8B 45", (Il2CppClass* klass))
 RESOLVE_BY_XREF_SIGNATURE(const char*, il2cpp_class_get_namespace, "E8 ? ? ? ? 48 8B 15 ? ? ? ? 48 8B C8 48 8B F8", (Il2CppClass* klass))
-RESOLVE_BY_SIGNATURE(FieldInfo*, il2cpp_class_get_field_from_name,
-	"55 41 57 41 56 41 55 41 54 56 57 53 48 83 EC ? 48 8D 6C 24 ? 48 C7 45 ? ? ? ? ? 48 85 C9 0F 84 ? ? ? ? 48 89 D6", (Il2CppClass* klass, const char* name));
-RESOLVE_BY_XREF_SIGNATURE(MethodInfo*, il2cpp_class_get_methods, "E8 ? ? ? ? 48 85 C0 74 ? 48 8D 5D", (Il2CppClass* klass, void** iter));
-RESOLVE_BY_XREF_SIGNATURE(const char*, il2cpp_method_get_name, "E8 ? ? ? ? 48 8B CE 48 2B C6", (MethodInfo* method));
-RESOLVE_BY_XREF_SIGNATURE(uint8_t, il2cpp_method_get_param_count, "E8 ? ? ? ? 3B C5 75", (MethodInfo* method));
-RESOLVE_BY_XREF_SIGNATURE(Il2CppImage*, il2cpp_assembly_get_image, "E8 ? ? ? ? 48 8B C8 EB ? 33 C9 ? ? ? ? ? ? ? 48 85 C9", (Il2CppAssembly* assembly));
+RESOLVE_BY_SIGNATURE(FieldInfo*, il2cpp_class_get_field_from_name, "55 41 57 41 56 41 55 41 54 56 57 53 48 83 EC ? 48 8D 6C 24 ? 48 C7 45 ? ? ? ? ? 48 85 C9 0F 84 ? ? ? ? 48 89 D6", (Il2CppClass* klass, const char* name))
+RESOLVE_BY_XREF_SIGNATURE(FieldInfo*, il2cpp_class_get_fields, "E8 ? ? ? ? 48 85 C0 75 ? E9 ? ? ? ? 89 E8", (Il2CppClass* klass, void** iter))
+RESOLVE_BY_XREF_SIGNATURE(Il2CppType*, il2cpp_field_get_type, "E8 ? ? ? ? 48 8B C8 49 89 46 ? E8", (FieldInfo* field))
+RESOLVE_BY_XREF_SIGNATURE(Il2CppClass*, il2cpp_class_from_type, "E8 ? ? ? ? 48 89 C6 44 0F B7 B0", (Il2CppType* type))
+RESOLVE_BY_XREF_SIGNATURE(MethodInfo*, il2cpp_class_get_methods, "E8 ? ? ? ? 48 85 C0 74 ? 48 8D 5D", (Il2CppClass* klass, void** iter))
+RESOLVE_BY_XREF_SIGNATURE(const char*, il2cpp_method_get_name, "E8 ? ? ? ? 48 8B CE 48 2B C6", (MethodInfo* method))
+RESOLVE_BY_XREF_SIGNATURE(uint8_t, il2cpp_method_get_param_count, "E8 ? ? ? ? 3B C5 75", (MethodInfo* method))
+RESOLVE_BY_XREF_SIGNATURE(Il2CppImage*, il2cpp_assembly_get_image, "E8 ? ? ? ? 48 8B C8 EB ? 33 C9 ? ? ? ? ? ? ? 48 85 C9", (Il2CppAssembly* assembly))
 RESOLVE_BY_XREF_SIGNATURE(Il2CppClass*, il2cpp_class_from_name, "E8 ? ? ? ? 48 83 C4 ? 48 89 05", (Il2CppImage* image, const char* namespaze, const char* name))
 RESOLVE_BY_XREF_SIGNATURE(int32_t, il2cpp_field_get_offset, "E8 ? ? ? ? 49 03 45", (FieldInfo* field))
 RESOLVE_BY_XREF_SIGNATURE(Il2CppArray*, il2cpp_array_new, "E8 ? ? ? ? 48 8B D8 8B 87", (Il2CppClass* elementTypeInfo, uintptr_t length))

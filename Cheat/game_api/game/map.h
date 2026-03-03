@@ -5,7 +5,7 @@
 namespace MoleMole
 {
 	struct ConfigScenePoint {
-		Unity::Vector3 GetTranPos();
+		Unity::Vector3& GetTranPos();
 	};
 
 	struct ScenePointData {
@@ -19,7 +19,7 @@ namespace MoleMole
 
 	struct MapModule {
 		static MapModule* Instance();
-		//Unity::Dictionary<uint32_t, Unity::Dictionary<uint32_t, ScenePointData>*>* GetScenePointDics();
+		Unity::Dictionary<uint32_t, ScenePointData>* GetScenePointDics(uint32_t sceneID);
 	};
 
 	struct MapManager {

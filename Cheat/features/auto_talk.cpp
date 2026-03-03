@@ -20,41 +20,44 @@ namespace features
 
 	// "class MoleMole.InLevelCutScenePageContext " found via "private MonoInLevelCutScenePage "
 	// "class MoleMole.TalkDialogContext " found via "private MonoTalkDialog "
-	void (*InLevelCutScenePageContext_UpdateView)(void* _this);
-	void hInLevelCutScenePageContext_UpdateView(void* _this) {
+	void UpdateView_Internal(Il2CppObject* _this) {
 		if (!_this) return;
 
-		//Log("\n");
+		static int32_t talk_dialog_context_offset = Il2Cpp::Field::GetOffsetFromTypeName(_this->klass, version_constants::beebyte::talk_dialog_context_class);
+		Il2CppObject* talk_dialog_context = *(Il2CppObject**)((uintptr_t)_this + talk_dialog_context_offset);
+		if (!talk_dialog_context) return;
 
-		void* talkDialogContext = *(void**)((uintptr_t)_this + 0x250); // dynamic
-		if (talkDialogContext) {
-
-			// F3 0F 11 B6 ? ? ? ? 48 8B 05 ? ? ? ? 48 8B 98
-			float* protectTime = (float*)((uintptr_t)talkDialogContext + 0x2D8); // dynamic
-			if (config.auto_talk.enabled) {
-				*protectTime = 0.0f;
-				InLevelCutScenePageContext_OnFreeClick(_this);
-
-				if (config.auto_talk.auto_choose_reply) {
-					void* monoTalkDialog = *(void**)((uintptr_t)talkDialogContext + 0x220); // dynamic
-					if (monoTalkDialog != nullptr) {
-						void* monoGrpSelect = *(void**)((uintptr_t)monoTalkDialog + 0x48);
-						if (monoGrpSelect != nullptr) {
-							void* monoReusableList = *(void**)((uintptr_t)monoGrpSelect + 0x28);
-							if (monoReusableList != nullptr) {
-								void* item = Il2Cpp::Method::Call<void*>("MoleMole", "MonoReusableList", "get_Item", 1, monoReusableList, 0);
-								if (item != nullptr) {
-									Il2Cpp::Method::Call<void>("MoleMole", "MonoSelectItem", "OnSelectItem", 0, item);
-								}
-							}
-						}
-					}
-				}
-			}
-			else
-				*protectTime = 0.1f;
+		static int32_t protect_time_offset = Mem::Signature("48 8D BE ? ? ? ? ? ? ? ? 80 3D ? ? ? ? 00").FindDisp();
+		float* protectTime = (float*)((uintptr_t)talk_dialog_context + protect_time_offset);
+		if (!config.auto_talk.enabled) {
+			*protectTime = 0.1f;
+			return;
 		}
 
+		*protectTime = 0.0f;
+		InLevelCutScenePageContext_OnFreeClick(_this);
+
+		if (config.auto_talk.auto_choose_reply) {
+			static int32_t mono_talk_dialog_offset = Il2Cpp::Field::GetOffsetFromTypeName(talk_dialog_context->klass, "MonoTalkDialog");
+			void* monoTalkDialog = *(void**)((uintptr_t)talk_dialog_context + mono_talk_dialog_offset);
+			if (!monoTalkDialog) return;
+
+			void* monoGrpSelect = *(void**)((uintptr_t)monoTalkDialog + 0x48);
+			if (!monoGrpSelect) return;
+
+			void* monoReusableList = *(void**)((uintptr_t)monoGrpSelect + 0x28);
+			if (!monoReusableList) return;
+
+			void* item = Il2Cpp::Method::Call<void*>("MoleMole", "MonoReusableList", "get_Item", 1, monoReusableList, 0);
+			if (!item) return;
+
+			Il2Cpp::Method::Call<void>("MoleMole", "MonoSelectItem", "OnSelectItem", 0, item);
+		}
+	}
+
+	void (*InLevelCutScenePageContext_UpdateView)(Il2CppObject* _this);
+	void hInLevelCutScenePageContext_UpdateView(Il2CppObject* _this) {
+		UpdateView_Internal(_this);
 		InLevelCutScenePageContext_UpdateView(_this);
 	}
 

@@ -75,7 +75,9 @@ namespace Dumper {
 			// If this class is an Open Generic (e.g., List<T>), its methods use generic
 			// placeholders (VAR) which we cannot resolve to concrete classes.
 			// We only want to scan inflated instances (e.g., List<int>).
-			if (Il2Cpp::GetClassGenericContainerIndex(cls)) continue;
+
+			if (Il2Cpp::ClassIsGeneric(cls)) 
+				continue;
 
 			// 1. Scan Fields (Your existing logic is generally safe here)
 			void* iter = nullptr;
@@ -109,10 +111,10 @@ namespace Dumper {
 			// 3. Scan Methods (The Crash Fix)
 			iter = nullptr;
 			while (MethodInfo* method = Il2Cpp::class_get_methods(cls, &iter)) {
-
 				// --- SAFEGUARD 2: Skip Generic Method Definitions ---
 				// If the method itself is generic (e.g. "T GetComponent<T>()"),
 				// we cannot resolve T. Skip it.
+				
 				if (Il2Cpp::GetMethodIsGenric(method)) continue;
 
 				// Check Return Type
@@ -122,7 +124,7 @@ namespace Dumper {
 					retType->type == IL2CPP_TYPE_CLASS)) {
 
 					// Safety check for generic instance data
-					if (retType->type == IL2CPP_TYPE_GENERICINST && !retType->data.generic_class) continue;
+					if ( !retType->data.generic_class) continue;
 
 					Il2CppClass* retClass = Il2Cpp::class_from_type(retType);
 					if (retClass && uniqueSet.find(retClass) == uniqueSet.end()) {
@@ -365,7 +367,7 @@ namespace Dumper {
 				}
 			}
 
-			if (!Il2Cpp::GetClassGenericContainerIndex(cls)) {
+			if (!Il2Cpp::ClassIsGeneric(cls)) {
 				iter = nullptr;
 				while (MethodInfo* method = Il2Cpp::class_get_methods(cls, &iter))
 				{

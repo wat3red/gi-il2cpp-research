@@ -37,7 +37,8 @@ namespace Il2Cpp {
 	uint32_t GetClassSize(Il2CppClass* klass);
 	Il2CppClass* GetClassParent(Il2CppClass* klass);
 	Il2CppType* GetClassType(Il2CppClass* klass);
-	int16_t GetClassGenericContainerIndex(Il2CppClass* klass);
+	//int16_t GetClassGenericContainerIndex(Il2CppClass* klass);
+	bool ClassIsGeneric(Il2CppClass* klass);
 	Il2CppGenericClass* GetClassGenericClass(Il2CppClass* klass);
 	Il2CppGenericContext* GetGenericContext(Il2CppGenericClass* genericClass);
 	Il2CppGenericInst* GenericContextGetClassInst(Il2CppGenericContext* genericContext);

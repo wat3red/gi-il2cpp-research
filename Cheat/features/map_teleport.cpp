@@ -24,12 +24,17 @@ namespace features
 		MoleMole::MapModule* map_module = MoleMole::MapModule::Instance();
 		if (!map_module) return result;
 
-		auto waypoints = ((Unity::Dictionary<uint32_t, MoleMole::ScenePointData>*(*)(MoleMole::MapModule*, uint32_t))(g_game_base + 0xF7CED50))(map_module, targetSceneId);
+		Unity::Dictionary<uint32_t, MoleMole::ScenePointData>* waypoints = map_module->GetScenePointDics(targetSceneId);
 		Log("waypoints %p\n", waypoints);
 
 		for (const auto& [waypointId, waypoint] : waypoints->to_vector()) {
 			if (waypoint.config == nullptr)
 				continue;
+
+			/*Log("waypoint.config + 0x20 = %s\n", (*(Unity::Vector3*)((uintptr_t)waypoint.config + 0x20)).ToString().c_str());
+			Log("waypoint.config + 0x2C = %s\n", (*(Unity::Vector3*)((uintptr_t)waypoint.config + 0x2C)).ToString().c_str());
+			Log("waypoint.config + 0x40 = %s\n", (*(Unity::Vector3*)((uintptr_t)waypoint.config + 0x40)).ToString().c_str());
+			Log("waypoint.config + 0x50 = %s\n", (*(Unity::Vector3*)((uintptr_t)waypoint.config + 0x50)).ToString().c_str());*/
 
 			Unity::Vector3 tran_pos = waypoint.config->GetTranPos();
 
@@ -90,7 +95,7 @@ namespace features
 		//return IsNeedTransByServer(result, position);
 		return false;
 	}
-	
+
 	void (*LoadingManager_PerformPlayerTransmit)(MoleMole::LoadingManager* _this, Unity::Vector3 position, int32_t someEnum, uint32_t someUint1, int32_t teleportType, uint32_t someUint2, bool someBool);
 	void hLoadingManager_PerformPlayerTransmit(MoleMole::LoadingManager* _this, Unity::Vector3 position, int32_t someEnum, uint32_t someUint1, int32_t teleportType, uint32_t someUint2, bool someBool) {
 		Log("hLoadingManager_PerformPlayerTransmit, taskInfo.currentStage=%d\n", taskInfo.currentStage);
@@ -124,6 +129,14 @@ namespace features
 
 	MoleMole::InLevelMapPageContext* last_map_context = nullptr;
 
+	struct PendingTeleport {
+		Unity::Vector3 targetPos;
+		int retryCount;
+		bool active;
+	};
+
+	static PendingTeleport pendingTeleport = {};
+
 	// to find "class MoleMole.BasePageContext " just search for "public virtual Void ClosePage();"
 	// "class MoleMole.UIManager " found via "public UIPlatformConfig "
 	// "class MoleMole.InLevelMapPageContext " found via "private MonoInLevelMapPage "
@@ -152,14 +165,48 @@ namespace features
 			levelPos.y = (levelPos.y - mapRect.m_YMin) / mapRect.m_Height;
 			levelPos.y = (levelPos.y * mapViewRect.m_Height) + mapViewRect.m_YMin;
 
-			auto worldPos = Il2Cpp::Method::Call<Unity::Vector3>("MoleMole", "Miscs", "GenWorldPos", 1, levelPos);
-			auto relativePos = Il2Cpp::Method::Call<Unity::Vector3>("MoleMole", "WorldShiftManager", "GetRelativePosition", 1, worldPos);
-			worldPos.y = Il2Cpp::Method::Call<float>("MoleMole", "Miscs", "CalcCurrentGroundHeight", 2, relativePos.x, relativePos.z) + 5.f;
+			Unity::Vector3 worldPos = Il2Cpp::Method::Call<Unity::Vector3>("MoleMole", "Miscs", "GenWorldPos", 1, levelPos);
+			Log("worldPos 1 %s\n", worldPos.ToString().c_str());
 
-			TeleportTo(worldPos);
-			/*MoleMole::ActorUtils::SetAvatarPos(worldPos);
+
+
+			Unity::Vector3 relativePos = Il2Cpp::Method::Call<Unity::Vector3>("MoleMole", "WorldShiftManager", "GetRelativePosition", 1, worldPos);
+			Log("relativePos 2 %s\n", relativePos.ToString().c_str());
+
+			//worldPos.y = Il2Cpp::Method::Call<float>("MoleMole", "Miscs", "CalcCurrentGroundHeight", 2, relativePos.x, relativePos.z) + 5.f;
+			
+			float groundY = Il2Cpp::Method::Call<float>(
+				"MoleMole", "Miscs", "CalcCurrentGroundHeight", 2,
+				relativePos.x, relativePos.z);
+
+			if (groundY < -99000000.0f) {
+				// Территория не загружена — телепортируем с текущей Y игрока,
+				// чтобы движок начал загружать чанки в точке назначения
+				Unity::Vector3 avatarPos = MoleMole::ActorUtils::GetAvatarPos();
+				worldPos.y = avatarPos.y;
+
+				// Запоминаем цель для корректировки после загрузки
+				pendingTeleport = { worldPos, 0, true };
+
+				MoleMole::ActorUtils::SetAvatarPos(worldPos);
+				MoleMole::EntityManager* em = MoleMole::EntityManager::Instance();
+				MoleMole::ActorUtils::SyncEntityPos(em->GetAvatar(), 0, 0);
+			}
+			else {
+				worldPos.y = groundY + 5.0f;
+				MoleMole::ActorUtils::SetAvatarPos(worldPos);
+				MoleMole::EntityManager* em = MoleMole::EntityManager::Instance();
+				MoleMole::ActorUtils::SyncEntityPos(em->GetAvatar(), 0, 0);
+			}
+
+
+			Log("worldPos 2 %s\n", worldPos.ToString().c_str());
+
+			//TeleportTo(worldPos);
+
+			MoleMole::ActorUtils::SetAvatarPos(worldPos);
 			MoleMole::EntityManager* entityManager = MoleMole::EntityManager::Instance();
-			MoleMole::ActorUtils::SyncEntityPos(entityManager->GetAvatar(), 0, 0);*/
+			MoleMole::ActorUtils::SyncEntityPos(entityManager->GetAvatar(), 0, 0);
 		}
 	}
 
@@ -183,7 +230,7 @@ namespace features
 		}
 
 		last_enabled = config.map_teleport.enabled;
-		///
+
 		if (taskInfo.waitingThread) {
 			Log("taskInfo.waitingThread\n");
 			taskInfo.waitingThread = false;
@@ -193,36 +240,56 @@ namespace features
 	}
 
 
-	void (*JAMJFDLKMIC__JEJBOLAHEON_orig)(void* _this, Unity::Vector3 targetPos, Unity::Vector3 lookAtPos, void* action);
-	void h_JAMJFDLKMIC__JEJBOLAHEON(void* _this, Unity::Vector3 targetPos, Unity::Vector3 lookAtPos, void* action) {
+	void (*SetPos)(void* _this, Unity::Vector3 targetPos, Unity::Vector3 lookAtPos, void* action);
+	void hSetPos(void* _this, Unity::Vector3 targetPos, Unity::Vector3 lookAtPos, void* action) {
 		if (taskInfo.waitingThread || config.map_teleport.enabled) {
 			// Подменяем координаты прямо перед выполнением перемещения
 			targetPos.x = taskInfo.targetPosition.x;
 			targetPos.y = taskInfo.targetPosition.y;
 			targetPos.z = taskInfo.targetPosition.z;
 
-			Log("Intercepted JEJBOLAHEON: Position modified to %f, %f, %f\n", targetPos.x, targetPos.y, targetPos.z);
+			Log("Intercepted: Position modified to %f, %f, %f\n", targetPos.x, targetPos.y, targetPos.z);
 
 			// Сбрасываем флаги, чтобы не зациклиться
 			taskInfo.waitingThread = false;
 		}
-		JAMJFDLKMIC__JEJBOLAHEON_orig(_this, targetPos, lookAtPos, action);
+		SetPos(_this, targetPos, lookAtPos, action);
 	}
 
-	
+	typedef MoleMole::ScenePointData* (*PJEKOIAKMJM__OHDMJANMLLP_t)(MoleMole::ScenePointData*, MoleMole::LoadingManager*, unsigned int, unsigned int);
+	PJEKOIAKMJM__OHDMJANMLLP_t Original = (PJEKOIAKMJM__OHDMJANMLLP_t)0;
+
+	MoleMole::ScenePointData* My_PJEKOIAKMJM__OHDMJANMLLP(MoleMole::ScenePointData* retstr, MoleMole::LoadingManager* _this, unsigned int sceneId, unsigned int pointId) {
+		// Вызываем оригинал, чтобы получить исходные данные (включая OKGFCEMNLNP)
+		MoleMole::ScenePointData result;
+		Original(&result, _this, sceneId, pointId);
+
+		// Подменяем позицию, если нужно
+		if (sceneId == taskInfo.sceneId) {
+			result.config->GetTranPos() = taskInfo.targetPosition;
+		}
+
+		// Копируем результат в выходной параметр (как это делает оригинал)
+		*retstr = result;
+		return retstr;
+	}
 
 	void MapTeleport::OnInit() {
+		//MH_CreateHook((LPVOID)(g_game_base + 0x10C09490),
+		//	(LPVOID)My_PJEKOIAKMJM__OHDMJANMLLP, (LPVOID*)&Original);
+
 		MH_CreateHook((LPVOID)(Mem::Signature("41 57 41 56 56 57 53 48 81 EC ? ? ? ? 44 0F 29 44 24 ? 0F 29 7C 24 ? 0F 29 74 24 ? 49 89 D6").Scan()),
 			(LPVOID)hInLevelMapPageContext_OnMapClicked, (LPVOID*)&InLevelMapPageContext_OnMapClicked);
 
-		MH_CreateHook((LPVOID)(g_game_base + 0xD9F6B30),
-			(LPVOID)h_JAMJFDLKMIC__JEJBOLAHEON, (LPVOID*)&JAMJFDLKMIC__JEJBOLAHEON_orig);
-		
+		//MH_CreateHook((LPVOID)(g_game_base + 0x8CEDA40),
+		//	(LPVOID)hSetPos, (LPVOID*)&SetPos);
+
 
 		/*MH_CreateHook((LPVOID)(Mem::Signature("41 57 41 56 41 54 56 57 55 53 48 81 EC ? ? ? ? 45 89 CC 45 89 C6").Scan()),
 			(LPVOID)hLoadingManager_PerformPlayerTransmit, (LPVOID*)&LoadingManager_PerformPlayerTransmit);*/
-		MH_CreateHook((LPVOID)(Mem::Signature("56 57 55 53 48 83 EC ? 4C 89 C7 89 D3 48 89 CE 80 3D ? ? ? ? 00 48 8B 05 ? ? ? ? 0F 85 ? ? ? ? 48 8B 90").Scan()),
-			(LPVOID)hLoadingManager_NeedTransByServer, (LPVOID*)&LoadingManager_NeedTransByServer);
+		
+			//MH_CreateHook((LPVOID)(Mem::Signature("56 57 55 53 48 83 EC ? 4C 89 C7 89 D3 48 89 CE 80 3D ? ? ? ? 00 48 8B 05 ? ? ? ? 0F 85 ? ? ? ? 48 8B 90").Scan()),
+		//	(LPVOID)hLoadingManager_NeedTransByServer, (LPVOID*)&LoadingManager_NeedTransByServer);
 
 		//todo: hook InLevelMapPageContext_OnMarkClicked
 		//private void [A-Z]{11}\(MonoMapMark IDLDOMJBBEK)

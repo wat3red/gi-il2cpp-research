@@ -68,11 +68,11 @@ namespace Unity
 		};
 
 		Array<Entry>* GetEntries() const {
-			return *(Array<Entry>**)((uintptr_t)this + Il2Cpp::Field::GetOffset(klass, "entries"));
+			return *(Array<Entry>**)((uintptr_t)this + Il2Cpp::Field::GetOffsetFromName(klass, "entries"));
 		}
 
 		int32_t GetCount() const {
-			return *(int32_t*)((uintptr_t)this + Il2Cpp::Field::GetOffset(klass, "count"));
+			return *(int32_t*)((uintptr_t)this + Il2Cpp::Field::GetOffsetFromName(klass, "count"));
 		}
 
 		std::vector<std::pair<K, V>> to_vector() const {

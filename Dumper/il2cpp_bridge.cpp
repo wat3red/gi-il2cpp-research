@@ -78,36 +78,6 @@ namespace Il2Cpp
 #undef METADATA_BASE_POINTER
 	}
 
-	Il2CppGenericClass* GetClassGenericClass(Il2CppClass* klass) {
-		// 49 83 BF ? ? ? ? 00 0F 85 ? ? ? ? 48 89 75
-		// if ((*(_BYTE*)(delegateType + 0xCA) & 1) != 0 || *(_QWORD*)(delegateType + 0x88))
-		return *(Il2CppGenericClass**)((uintptr_t)klass + 0x88);
-	}
-
-	Il2CppGenericContext* GetGenericContext(Il2CppGenericClass* genericClass) {
-		// In InitLocked 
-		// 48 83 45 ? ? 31 F6
-		return (Il2CppGenericContext*)((uintptr_t)genericClass + 0x8);
-	}
-
-	Il2CppGenericInst* GenericContextGetClassInst(Il2CppGenericContext* genericContext) {
-		// In Object::Box
-		// E8 ? ? ? ? 48 89 C7 F6 80 ? ? ? ? ? 75 ? 48 8D 05 ? ? ? ? 48 89 45 ? 48 8B 0D ? ? ? ? FF 15 ? ? ? ? 48 8D 55 ? 48 89 F9 E8 ? ? ? ? 48 8B 45 ? ? ? ? FF 15 ? ? ? ? 0F B7 87
-		return *(Il2CppGenericInst**)(genericContext);
-	}
-
-	Il2CppType* GetClassType(Il2CppClass* klass) {
-		// 48 83 C6 ? 48 8D 7D ? 48 89 F9
-		return (Il2CppType*)((uintptr_t)klass + 0x68);
-	}
-
-	int16_t GetClassGenericContainerIndex(Il2CppClass* klass) {
-		// search for "The number of generic arguments provided doesn't equal the arity of the generic type definition."
-		// if (cls->genericContainerIndex) continue;
-		// v17 = (unsigned int)(__int16)(*(_WORD*)(*(_QWORD*)(v49 + 0x40) + 0x3ELL) - 0x2A41);
-		return *(int16_t*)((uintptr_t)klass + 0x3E) - 0x2A41;
-	}
-
 	int16_t GetMethodSlot(MethodInfo* method) {
 		// unchanged since 6.2
 		// 48 C7 40 ? 00 00 00 00 ? ? ? 66 C7 40
@@ -207,5 +177,50 @@ namespace Il2Cpp
 			return false;
 
 		return size > 8;
+	}
+
+	Il2CppType* GetClassType(Il2CppClass* klass) {
+		// 48 83 C6 ? 48 8D 7D ? 48 89 F9
+		return (Il2CppType*)((uintptr_t)klass + 0x68);
+	}
+
+
+
+
+
+
+
+
+	Il2CppGenericClass* GetClassGenericClass(Il2CppClass* klass) {
+		// 49 83 7F ? 00 0F 85 ? ? ? ? 48 89 75
+		return *(Il2CppGenericClass**)((uintptr_t)klass + 0x50);
+	}
+
+	Il2CppGenericContext* GetGenericContext(Il2CppGenericClass* genericClass) {
+		// unchangesd since 6.2
+		// In InitLocked 
+		// 49 83 C6 ? 31 FF 4C 89 6D
+		return (Il2CppGenericContext*)((uintptr_t)genericClass + 0x8);
+	}
+
+	Il2CppGenericInst* GenericContextGetClassInst(Il2CppGenericContext* genericContext) {
+		// i think this doesn't change
+		// In Object::Box
+		// E8 ? ? ? ? 48 89 C7 F6 80 ? ? ? ? ? 75 ? 48 8D 05 ? ? ? ? 48 89 45 ? 48 8B 0D ? ? ? ? FF 15 ? ? ? ? 48 8D 55 ? 48 89 F9 E8 ? ? ? ? 48 8B 45 ? ? ? ? FF 15 ? ? ? ? 0F B7 87
+		return *(Il2CppGenericInst**)(genericContext);
+	}
+
+	/*	int16_t GetClassGenericContainerIndex(Il2CppClass* klass) {
+			// search for "The number of generic arguments provided doesn't equal the arity of the generic type definition."
+			// v17 = (unsigned int)(__int16)(*(_WORD*)(*(_QWORD*)(v49 + 0x40) + 0x3ELL) - 0x2A41);
+			// v18 = *(_WORD *)(*(_QWORD *)(v50 + 0x48) + 0x30LL) - 0x7718;
+			// 48 8B 40 ? 0F B7 40 ? 05 ? ? ? ? 48 0F BF C8
+			return *(int16_t*)((uintptr_t)klass + 0x30) - 0x7718;
+		}*/
+
+	bool ClassIsGeneric(Il2CppClass* klass) {
+		// for func xref: E8 ? ? ? ? 89 C5 8D 44 AD
+		// 0F B7 88 ? ? ? ? 81 F9
+		return (*(uint16_t*)((uintptr_t)klass + 180) != 0xFFFF);
 	}
 }
