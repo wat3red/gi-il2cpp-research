@@ -205,7 +205,6 @@ namespace features
 			Log("[%zu] val=%p\n", i, avatar);
 
 			Config::CostumeMapping* mapping = config.costume_changer.GetMapping(*avatar->ConfigID());
-			Log("%d\n", __LINE__);
 
 			if (mapping) {
 				if (mapping->costume_id != 0) {
@@ -264,39 +263,26 @@ namespace features
 		}
 	}
 
-	// 0x38 to decimal is 56
-
 	// private void [A-Z]{11}\([A-Z]{11} [A-Z]{11}, LBBDEIFADJM [A-Z]{11}, uint32 [A-Z]{11}, uint32 [A-Z]{11}\) // 6.3 
 	// private void [A-Z]{11}\([A-Z]{11} [A-Z]{11}, JNJPFIJANIF [A-Z]{11}, uint32 [A-Z]{11}, uint32 [A-Z]{11}\) // 6.2
 	void (*HandleAuthorityAvatarAppear)(void* _this, Proto::SceneEntityInfo* entity, int32_t type, uint32_t infoParam, uint32_t costumeID);
 	void hHandleAuthorityAvatarAppear(void* _this, Proto::SceneEntityInfo* entity, int32_t type, uint32_t infoParam, uint32_t costumeID) {
-		Log("[HandleAuthorityAvatarAppear] entity=%p, costumeID=%u, infoParam=%u\n", entity, costumeID, infoParam);
+		//Log("[HandleAuthorityAvatarAppear] entity=%p, costumeID=%u, infoParam=%u\n", entity, costumeID, infoParam);
 
 		static bool initialized = false;
 		if (!initialized) {
 			CollectItems();
 			initialized = true;
 		}
-		Log("%d\n", __LINE__);
 
 		Proto::SceneAvatarInfo* scene_avatar = (Proto::SceneAvatarInfo*)entity->Entity();
 		Config::CostumeMapping* mapping = config.costume_changer.GetMapping(*scene_avatar->ConfigID());
-		Log("%d\n", __LINE__);
-
-		Log("*scene_avatar->ConfigID() %d\n", *scene_avatar->ConfigID());
-
 
 		if (mapping) {
-			Log("%d\n", __LINE__);
-
 			if (mapping->costume_id != 0) {
-				Log("%d\n", __LINE__);
-
 				*scene_avatar->CostumeID() = mapping->costume_id;
 			}
 			if (mapping->flycloak_id != 0) {
-				Log("%d\n", __LINE__);
-
 				*scene_avatar->FlycloakID() = mapping->flycloak_id;
 			}
 		}

@@ -258,6 +258,12 @@ static LONG g_inCrashHandler = 0;
 
 // Exception codes worth logging (extend as needed)
 static bool ShouldLog(DWORD code) {
+
+	return true;
+
+
+
+
 	switch (code) {
 	case EXCEPTION_ACCESS_VIOLATION:
 	/*case EXCEPTION_ILLEGAL_INSTRUCTION:

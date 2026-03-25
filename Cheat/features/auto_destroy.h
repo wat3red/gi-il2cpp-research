@@ -3,10 +3,10 @@
 
 namespace features
 {
-	class KillAura : public Feature {
+	class AutoDestroy : public Feature {
 	public:
 		void DrawUI() override;
+		void OnUpdate() override;
 		void OnInit() override;
-		//void OnUpdate() override;
 	};
 }

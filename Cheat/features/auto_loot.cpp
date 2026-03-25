@@ -7,7 +7,15 @@ namespace features
 
 		if (config.auto_loot.enabled) {
 			ImGui::Indent();
-			ImGuiEx::SliderFloat("Loot range", config.auto_loot.loot_range, 1.f, 10.f);
+			ImGuiEx::SliderFloat("Loot range", config.auto_loot.loot_range, 1.f, 50.f);
+
+			ImGuiEx::Checkbox("Treasures", config.auto_loot.treasures);
+			if (config.auto_loot.treasures) {
+				ImGui::Indent();
+				ImGuiEx::SliderFloat("Treasures pickup range", config.auto_loot.treasure_range, 1.f, 10.f);
+				ImGui::Unindent();
+			}
+
 			ImGui::Unindent();
 		}
 	}
@@ -24,17 +32,18 @@ namespace features
 		float distance = avatar->GetRelativePosition().Distance(entity->GetRelativePosition());
 		auto type = entity->GetType();
 
-		if (type != MoleMole::EntityType::GatherObject &&
-			type != MoleMole::EntityType::GatherPoint &&
-			type != MoleMole::EntityType::HomeGatherObject &&
-			type != MoleMole::EntityType::DropItem &&
-			type != MoleMole::EntityType::EnvAnimal) {
+		if (type == MoleMole::EntityType::GatherObject ||
+			type == MoleMole::EntityType::GatherPoint ||
+			type == MoleMole::EntityType::HomeGatherObject ||
+			type == MoleMole::EntityType::DropItem ||
+			type == MoleMole::EntityType::EnvAnimal) {
 
-			result = false;
+			result = distance <= config.auto_loot.loot_range;
 			return;
 		}
 
-		result = distance <= config.auto_loot.loot_range;
+		result = false;
+		return;
 	}
 
 	void (*LCSelectPickup_AddInteeBtnById)(void* _this, MoleMole::BaseEntity* entity);
@@ -49,8 +58,10 @@ namespace features
 			if (!item_module) return;
 
 			if (type == MoleMole::EntityType::GatherObject ||
-				type == MoleMole::EntityType::EnvAnimal ||
-				type == MoleMole::EntityType::DropItem) {
+				type == MoleMole::EntityType::GatherPoint ||
+				type == MoleMole::EntityType::HomeGatherObject ||
+				type == MoleMole::EntityType::DropItem ||
+				type == MoleMole::EntityType::EnvAnimal) {
 
 				Log("[AutoLoot] Picking item id=%u\n", id);
 				MoleMole::ActorUtils::SyncEntityPos(entity, 0, 0);
@@ -79,6 +90,30 @@ namespace features
 		OnCheckIsInPosition(result, entity);
 
 		return result;
+	}
+
+	void AutoLoot::OnUpdate() {
+		MoleMole::EntityManager* entity_manager = MoleMole::EntityManager::Instance();
+		if (!entity_manager) return;
+
+		std::vector<MoleMole::BaseEntity*> entities = entity_manager->GetEntities();
+
+		for (auto* entity : entities) {
+			if (!entity) continue;
+
+			if (entity->GetType() != MoleMole::EntityType::Chest) continue;
+
+			Unity::Vector3 avatar_pos = MoleMole::EntityManager::Instance()->GetAvatar()->GetRelativePosition();
+			Unity::Vector3 entity_pos = entity->GetRelativePosition();
+
+			float distance = avatar_pos.Distance(entity_pos);
+			if (distance > config.auto_loot.treasure_range) continue;
+
+			MoleMole::ItemModule* item_module = MoleMole::ItemModule::Instance();
+			if (!item_module) return;
+
+			item_module->PickItem(entity->GetRuntimeID());
+		}
 	}
 
 	void AutoLoot::OnInit() {

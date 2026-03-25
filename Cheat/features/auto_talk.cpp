@@ -75,7 +75,7 @@ namespace features
 		MonoTypeWriter_Update(_this);
 	}
 
-	bool previous_game_speed_enabled = config.game_speed.enabled;
+	/*bool previous_game_speed_enabled = config.game_speed.enabled;
 	float previous_game_speed_speed = config.game_speed.speed;
 
 	void (*InLevelCutScenePageContext_SetupView)(void* _this);
@@ -97,7 +97,7 @@ namespace features
 			config.game_speed.speed = previous_game_speed_speed;
 		}
 		InLevelCutScenePageContext_ClearView(_this);
-	}
+	}*/
 
 	void AutoTalk::OnInit() {
 		MH_CreateHook(Mem::Signature(
@@ -107,12 +107,12 @@ namespace features
 		MH_CreateHook(Il2Cpp::Method::GetMethodPointer(Il2Cpp::Method::Find("MoleMole", "MonoTypewriter", "Update", 0)),
 			hMonoTypeWriter_Update, (LPVOID*)&MonoTypeWriter_Update);
 
-		MH_CreateHook(Mem::Signature(
+		/*MH_CreateHook(Mem::Signature(
 			"41 57 41 56 56 57 53 48 83 EC ? 48 89 CE 80 3D ? ? ? ? 00 0F 85 ? ? ? ? 48 8B BE ? ? ? ? 48 85 FF 0F 84 ? ? ? ? 48 8B 0D").Scan(),
 			hInLevelCutScenePageContext_SetupView, (LPVOID*)&InLevelCutScenePageContext_SetupView);
 
 		MH_CreateHook(Mem::Signature(
 			"56 57 53 48 83 EC ? 48 89 CE 80 3D ? ? ? ? 00 0F 85 ? ? ? ? 48 8B 96 ? ? ? ? 48 85 D2 74 ? 48 8B 05 ? ? ? ? 48 8B 88 ? ? ? ? 48 85 C9 0F 84 ? ? ? ? E8 ? ? ? ? 48 C7 86 ? ? ? ? 00 00 00 00 48 8B 86 ? ? ? ? 48 85 C0 74").Scan(),
-			hInLevelCutScenePageContext_ClearView, (LPVOID*)&InLevelCutScenePageContext_ClearView);
+			hInLevelCutScenePageContext_ClearView, (LPVOID*)&InLevelCutScenePageContext_ClearView);*/
 	}
 }

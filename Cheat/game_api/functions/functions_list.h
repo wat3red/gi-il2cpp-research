@@ -3,6 +3,11 @@
 
 #define COMMA ,
 
+/*RESOLVE_BY_OFFSET(Il2CppObject*, LCBaseCombat_ChangeHP, 0xE0945B0, (Il2CppObject* _this, float value))
+RESOLVE_BY_OFFSET(Il2CppObject*, LCBaseCombat_ChangeHP1, 0xE097630, (Il2CppObject* _this, float value))
+RESOLVE_BY_OFFSET(Il2CppObject*, LCBaseCombat_UpdateCombatProp, 0xE0948C0, (Il2CppObject* _this, int32_t type, float value, int32_t state))*/
+RESOLVE_BY_OFFSET(Il2CppObject*, ComponentManager_GetComponent, 0x9E26300, (Il2CppObject* _this, Il2CppString* typeName)) // 0x9E26890
+
 RESOLVE_BY_SIGNATURE(Unity::Dictionary<uint32_t COMMA MoleMole::ScenePointData>*, MapModule_GetScenePointDic, "56 57 53 48 83 EC ? 89 D6 48 89 CF 80 3D ? ? ? ? 00 0F 85 ? ? ? ? 80 3D ? ? ? ? 00 48 8B 05 ? ? ? ? 0F 85 ? ? ? ? 48 8B 98 ? ? ? ? 48 85 DB 74 ? 48 89 D9 89 F2 E8 ? ? ? ? 85 C0 78 ? 48 8B 4B ? 48 85 C9 0F 84 ? ? ? ? 3B 41 ? 73", (MoleMole::MapModule* _this, uint32_t sceneID))
 
 RESOLVE_BY_XREF_SIGNATURE(Il2CppString*, AvatarExcelConfig_GetName, "E8 ? ? ? ? 48 85 F6 0F 84 ? ? ? ? 4C 8B 7C 24", (Il2CppObject* _this))
@@ -145,3 +150,4 @@ RESOLVE_BY_XREF_SIGNATURE(Il2CppImage*, il2cpp_assembly_get_image, "E8 ? ? ? ? 4
 RESOLVE_BY_XREF_SIGNATURE(Il2CppClass*, il2cpp_class_from_name, "E8 ? ? ? ? 48 83 C4 ? 48 89 05", (Il2CppImage* image, const char* namespaze, const char* name))
 RESOLVE_BY_XREF_SIGNATURE(int32_t, il2cpp_field_get_offset, "E8 ? ? ? ? 49 03 45", (FieldInfo* field))
 RESOLVE_BY_XREF_SIGNATURE(Il2CppArray*, il2cpp_array_new, "E8 ? ? ? ? 48 8B D8 8B 87", (Il2CppClass* elementTypeInfo, uintptr_t length))
+RESOLVE_BY_XREF_SIGNATURE(Il2CppObject*, il2cpp_object_new, "E8 ? ? ? ? 48 89 47 ? 48 8B 4E ? 48 89 48", (Il2CppClass* klass))

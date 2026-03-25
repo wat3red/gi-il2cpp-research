@@ -47,8 +47,9 @@ namespace features
 
 	// public FALFDBINCDK [A-Z]{11}\(uint32 [A-Z]{11}\)
 	// void [A-Z]{11}\(uint32 [A-Z]{11}, [A-Z]{11} [A-Z]{11}, boolean [A-Z]{11}, uint32 [A-Z]{11}, uint32 [A-Z]{11}\)
+	// 
+	// public [A-Z]{11} [A-Z]{11}\(string [A-Z]{11}\)
 
-	
 	void (*LevelSyncCombatPlugin_RequestSceneEntityMoveReq)(Il2CppObject* _this, uint32_t entityId, Proto::MotionInfo* motionInfo, bool a1, uint32_t a2, uint32_t a3);
 	void hLevelSyncCombatPlugin_RequestSceneEntityMoveReq(Il2CppObject* _this, uint32_t entityId, Proto::MotionInfo* motionInfo, bool a1, uint32_t a2, uint32_t a3) {
 		MoleMole::EntityManager* entity_manager = MoleMole::EntityManager::Instance();
@@ -119,6 +120,9 @@ namespace features
 	void hLevelSyncCombatPlugin_TickFlushTimeAcc(Il2CppObject* _this) {
 		MoleMole::EntityManager* entity_manager = MoleMole::EntityManager::Instance();
 		if (!entity_manager) return;
+
+		if (!config.kill_aura.enabled) return;
+
 		std::vector<MoleMole::BaseEntity*> entities = entity_manager->GetEntities();
 		for (auto* entity : entities) {
 			if (!entity) continue;
@@ -129,7 +133,7 @@ namespace features
 			float distance = avatar_pos.Distance(entity_pos);
 			if (distance <= config.kill_aura.range) {
 				Log("[KillAura] Entity ID: %d, type: %d\n", entity->GetRuntimeID(), (int)entity->GetType(), entity->GetName()->ToCStr());
-				
+
 				entity->SetAbsolutePosition({ entity_pos.x, -1000.f, entity_pos.z });
 				MoleMole::ActorUtils::SyncEntityPos(entity, 0, 0);
 			}
@@ -138,12 +142,68 @@ namespace features
 		LevelSyncCombatPlugin_TickFlushTimeAcc(_this);
 	}
 
+	// 0xe0948c0
+	//  BCAPHHFEMJK is LCBaseCombat 
+	// MoleMole.AttackResult: DCDKGOKNGIK
+
 	void KillAura::OnInit() {
 		MH_CreateHook((LPVOID)(Mem::Signature(
 			"56 48 83 EC ? 0F 29 74 24 ? 48 89 CE 80 3D ? ? ? ? 00 75 ? F3 0F 10 76 ? E8 ? ? ? ? F3 0F 58 C6 F3 0F 11 46 ? E8 ? ? ? ? 0F 57 C0").Scan()),
 			(LPVOID)hLevelSyncCombatPlugin_TickFlushTimeAcc, (LPVOID*)&LevelSyncCombatPlugin_TickFlushTimeAcc);
 
-		MH_CreateHook((LPVOID)(Mem::Signature("41 57 41 56 41 54 56 57 55 53 48 83 EC ? 45 89 CF 4D 89 C6 89 D5 48 89 CE").Scan()),
-			(LPVOID)hLevelSyncCombatPlugin_RequestSceneEntityMoveReq, (LPVOID*)&LevelSyncCombatPlugin_RequestSceneEntityMoveReq);
+		//MH_CreateHook((LPVOID)(Mem::Signature("41 57 41 56 41 54 56 57 55 53 48 83 EC ? 45 89 CF 4D 89 C6 89 D5 48 89 CE").Scan()),
+			//(LPVOID)hLevelSyncCombatPlugin_RequestSceneEntityMoveReq, (LPVOID*)&LevelSyncCombatPlugin_RequestSceneEntityMoveReq);
 	}
+
+/*	void KillAura::OnUpdate()
+	{
+		MoleMole::EntityManager* entity_manager = MoleMole::EntityManager::Instance();
+		if (!entity_manager) return;
+
+		std::vector<MoleMole::BaseEntity*> entities = entity_manager->GetEntities();
+
+		for (auto* entity : entities) {
+			if (!entity) continue;
+
+			if (entity->GetType() != MoleMole::EntityType::Monster) continue;
+
+			Unity::Vector3 avatar_pos = MoleMole::EntityManager::Instance()->GetAvatar()->GetRelativePosition();
+			Unity::Vector3 entity_pos = entity->GetRelativePosition();
+
+			float distance = avatar_pos.Distance(entity_pos);
+
+			if (distance <= config.kill_aura.range) {
+				Log("[KillAura] Entity ID: %d, type: %d\n", entity->GetRuntimeID(), (int)entity->GetType(), entity->GetName()->ToCStr());
+
+				Il2CppObject* logic_component_manager = *(Il2CppObject**)((uintptr_t)entity + 0x200); // 0x110
+				if (!logic_component_manager) return;
+				Log("[KillAura] logic_component_manager: %p\n", logic_component_manager);
+
+				//Il2CppObject* lc_base_combat = ComponentManager_GetComponent(logic_component_manager, Il2CppString::FromCStr("BCAPHHFEMJK"));
+				//if (!lc_base_combat) return;
+				//Log("[KillAura] lc_base_combat: %p\n", lc_base_combat);
+
+				//LCBaseCombat_ChangeHP(lc_base_combat, 0.f);
+				//LCBaseCombat_ChangeHP1(lc_base_combat, 0.f);
+				//LCBaseCombat_UpdateCombatProp(lc_base_combat, 2, 0, 1);
+				//Log("[KillAura] done\n");
+
+
+				Il2CppObject* obj = ComponentManager_GetComponent(logic_component_manager, Il2CppString::FromCStr("IGMMANECCMN"));
+				if (!obj) return;
+				Log("[KillAura] obj: %p\n", obj);
+
+				///((void(*)(Il2CppObject * _this, int32_t type, float value, int32_t state))(g_game_base + 0x6E9B320))(obj, 2, 0, 1);
+				//((void(*)(Il2CppObject * _this, float value))(g_game_base + 0x6E9B380))(obj, 0);
+				//((void(*)(Il2CppObject * _this,  float value))(g_game_base + 0x6E9AEB0))(obj, 0);
+
+				//((void(*)(Il2CppObject * _this, uint32_t killer, int32_t dieType))(g_game_base + 0x6E98B40))(obj, MoleMole::EntityManager::Instance()->GetAvatar()->GetRuntimeID(), 3);
+
+				void* AttackResult = ((void* (*)(int32_t a, float b))(g_game_base + 0x80E9470))(1, 5.f);
+				Il2CppClass* attackResultClass = Il2Cpp::Class::FromName("MoleMole", "AttackResult");
+				Il2CppObject* o = il2cpp_object_new(attackResultClass);
+				Log("[KillAura] done\n");
+			}
+		}
+	}*/
 }

@@ -12,7 +12,7 @@ std::vector<BaseEntity*> EntityManager::GetEntities() {
 	static int32_t offset = Mem::Signature("4C 8B BA ? ? ? ? 4D 85 FF 0F 84 ? ? ? ? 48 89 55 ? 41 8B 77").FindDisp();
 	Unity::List<BaseEntity*>* entityList = *(Unity::List<BaseEntity*>**)((uintptr_t)this + offset);
 
-	std::vector<BaseEntity*> vector;
+	std::vector<BaseEntity*> vector{};
 	if (entityList) {
 		//Log("entityList: %p, size: %d \n", entityList, entityList->size);
 		for (int i = 0; i < entityList->size; i++) {

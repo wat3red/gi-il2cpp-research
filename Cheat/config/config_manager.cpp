@@ -1,4 +1,5 @@
 #include "config_manager.h"
+#include <logger/logger.h>
 
 std::string ConfigManager::CurrentConfig = ("default.json");
 
@@ -23,21 +24,31 @@ void ConfigManager::Save(const json& config) {
 json ConfigManager::Load() {
     char* userProfile = nullptr;
     size_t len = 0;
-    errno_t err = _dupenv_s(&userProfile, &len, ("USERPROFILE"));
+    errno_t err = _dupenv_s(&userProfile, &len, "USERPROFILE");
 
     if (err != 0 || userProfile == nullptr) {
         return json{};
     }
 
-    std::string directory = std::string(userProfile) + ("\\Lucent");
-    free(userProfile);  // Clean up allocated memory
+    std::string directory = std::string(userProfile) + "\\Lucent";
+    free(userProfile);
 
-    std::ifstream file(directory + ("\\") + CurrentConfig);
+    std::ifstream file(directory + "\\" + CurrentConfig);
     if (!file.is_open()) return json{};
 
-    json config;
-    file >> config;
-    return config;
+    try {
+        json config;
+        file >> config;
+        return config;
+    }
+    catch (const json::parse_error& e) {
+        Log("JSON parse error: %s\n", e.what());
+        return json{};
+    }
+    catch (...) {
+        Log("Unknown exception in ConfigManager::Load\n");
+        return json{};
+    }
 }
 
 std::vector<std::string> ConfigManager::SplitPath(const std::string& path) {

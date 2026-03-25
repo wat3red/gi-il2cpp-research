@@ -154,9 +154,11 @@
     <ClInclude Include="external\json.hpp" />
     <ClInclude Include="config\config.h" />
     <ClInclude Include="directx_hook.h" />
+    <ClInclude Include="features\auto_destroy.h" />
     <ClInclude Include="features\auto_talk.h" />
     <ClInclude Include="features\auto_loot.h" />
     <ClInclude Include="features\costume_changer.h" />
+    <ClInclude Include="features\custom_teleports.h" />
     <ClInclude Include="features\esp.h" />
     <ClInclude Include="features\feature.h" />
     <ClInclude Include="features\features.h" />
@@ -180,7 +182,7 @@
     <ClInclude Include="game_api\unity\unity_collections.h" />
     <ClInclude Include="game_api\unity\unity_delegates.h" />
     <ClInclude Include="game_api\unity\unity_objects.h" />
-    <ClInclude Include="game_api\unity\unity_types.h" />
+    <ClInclude Include="game_api\unity\unity_primitives.h" />
     <ClInclude Include="gui\gui.h" />
     <ClInclude Include="gui\menu.h" />
     <ClInclude Include="game_api\il2cpp\il2cpp_types.h" />
@@ -212,9 +214,11 @@
     <ClCompile Include="config\config.cpp" />
     <ClCompile Include="directx_hook.cpp" />
     <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="features\auto_destroy.cpp" />
     <ClCompile Include="features\auto_talk.cpp" />
     <ClCompile Include="features\auto_loot.cpp" />
     <ClCompile Include="features\costume_changer.cpp" />
+    <ClCompile Include="features\custom_teleports.cpp" />
     <ClCompile Include="features\esp.cpp" />
     <ClCompile Include="features\features.cpp" />
     <ClCompile Include="features\game_speed.cpp" />

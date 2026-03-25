@@ -120,7 +120,7 @@
     <ClInclude Include="game_api\unity\unity_collections.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="game_api\unity\unity_types.h">
+    <ClInclude Include="game_api\unity\unity_primitives.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="game_api\unity\unity_objects.h">
@@ -187,6 +187,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="features\infinite_stamina.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="features\auto_destroy.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="features\custom_teleports.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -321,6 +327,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="features\infinite_stamina.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="features\auto_destroy.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="features\custom_teleports.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

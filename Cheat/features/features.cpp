@@ -1,3 +1,5 @@
+#include "auto_destroy.h"
+#include "custom_teleports.h"
 #include "esp.h"
 #include "auto_talk.h"
 #include "auto_loot.h"
@@ -32,6 +34,8 @@ void features::InitAllFeatures() {
 	void* MiHoYo_SDK_Dll_Update_ptr = Il2Cpp::Method::GetMethodPointer(Il2Cpp::Method::Find("MiHoYo.SDK", "Dll", "Update", 0));
 	MH_CreateHook(MiHoYo_SDK_Dll_Update_ptr, (LPVOID)hMiHoYo_SDK_Dll_Update, (LPVOID*)&MiHoYo_SDK_Dll_Update);
 
+	all_features.push_back(new AutoDestroy());
+	all_features.push_back(new CustomTeleports());
 	all_features.push_back(new ESP());
 	all_features.push_back(new AutoTalk());
 	all_features.push_back(new MapTeleport());

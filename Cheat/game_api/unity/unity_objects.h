@@ -1,5 +1,5 @@
 #pragma once
-#include "unity_types.h"
+#include "unity_primitives.h"
 #include "../il2cpp/il2cpp_types.h"
 
 namespace Unity
