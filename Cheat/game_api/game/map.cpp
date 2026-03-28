@@ -61,3 +61,13 @@ Unity::Transform* MoleMole::MonoInLevelMapPage::GetMapBackground() {
 Unity::Rect MoleMole::MonoInLevelMapPage::GetMapRect() {
 	return Il2Cpp::Method::Call<Unity::Rect>("MoleMole", "MonoInLevelMapPage", "get_mapRect", 0, this);
 }
+
+GeneralMarkData* MoleMole::MarkManager::GetNavigatingMark(uint32_t scene)
+{
+	return MarkManager_GetNavigatingMark(this, scene);
+}
+
+MarkManager* MoleMole::MarkManager::Instance()
+{
+	return (MarkManager*)SingletonManager::GetSingletonInstance(version_constants::beebyte::mark_manager_class);
+}

@@ -5,7 +5,7 @@ namespace features
 	void AutoDestroy::DrawUI() {
 		ImGuiEx::Checkbox("Enable auto destroy", config.auto_destroy.enabled);
 
-		if (config.auto_loot.enabled) {
+		if (config.auto_destroy.enabled) {
 			ImGui::Indent();
 			ImGuiEx::SliderFloat("Destroy range", config.auto_destroy.range, 1.f, 100.f);
 			ImGui::Unindent();
@@ -23,10 +23,19 @@ namespace features
 		// "protected notserialized {found_class_name}"
 		static int32_t offset = Mem::Signature("48 8B 41 ? 48 85 C0 74 ? 48 8B 80 ? ? ? ? 48 85 C0 74 ? 8B 50").FindDisp();
 		MoleMole::BaseEntity* entity = *(MoleMole::BaseEntity**)((uintptr_t)_this + offset);
-		if (!entity) return false;
 
 		if (entity->GetAbsolutePosition().Distance(entityManager->GetAvatar()->GetAbsolutePosition()) > config.auto_destroy.range)
 			return false;
+
+		if (entity->GetType() == MoleMole::EntityType::Avatar)
+			return false;
+
+		if (strstr(entity->GetName()->ToCStr(), "Clue"))
+			return false;
+
+		Log("entity name: %s, [type %d]\n", entity->GetName()->ToCStr(), entity->GetType());
+
+		return true;
 	}
 
 	// MoleMole.LCAbilityElement : NOGDEOKCHDG
@@ -37,7 +46,7 @@ namespace features
 	void hLCAbilityElement_ReduceModifierDurability(Il2CppObject* _this, int32_t modifierDurabilityIndex,
 		float reduceDurability, System::Nullable<float> deltaTime) {
 
-		if (NeedsDestruction(_this)) 
+		if (NeedsDestruction(_this))
 			reduceDurability = 1000.f;
 
 		LCAbilityElement_ReduceModifierDurability(_this, modifierDurabilityIndex, reduceDurability, deltaTime);

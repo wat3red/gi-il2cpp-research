@@ -1,5 +1,6 @@
 #include "auto_destroy.h"
 #include "custom_teleports.h"
+#include "quest_teleport.h"
 #include "esp.h"
 #include "auto_talk.h"
 #include "auto_loot.h"
@@ -36,6 +37,7 @@ void features::InitAllFeatures() {
 
 	all_features.push_back(new AutoDestroy());
 	all_features.push_back(new CustomTeleports());
+	all_features.push_back(new QuestTeleport());
 	all_features.push_back(new ESP());
 	all_features.push_back(new AutoTalk());
 	all_features.push_back(new MapTeleport());

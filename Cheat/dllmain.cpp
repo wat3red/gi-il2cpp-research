@@ -258,20 +258,14 @@ static LONG g_inCrashHandler = 0;
 
 // Exception codes worth logging (extend as needed)
 static bool ShouldLog(DWORD code) {
-
-	return true;
-
-
-
-
 	switch (code) {
 	case EXCEPTION_ACCESS_VIOLATION:
-	/*case EXCEPTION_ILLEGAL_INSTRUCTION:
+	case EXCEPTION_ILLEGAL_INSTRUCTION:
 	case EXCEPTION_STACK_OVERFLOW:
 	case EXCEPTION_INT_DIVIDE_BY_ZERO:
 	case EXCEPTION_PRIV_INSTRUCTION:
-	case EXCEPTION_ARRAY_BOUNDS_EXCEEDED:*/
-	//case 0xE06D7363: // C++ exception (SEH wrapper)
+	case EXCEPTION_ARRAY_BOUNDS_EXCEEDED:
+	case 0xE06D7363: // C++ exception (SEH wrapper)
 		return true;
 	default:
 		return false;
@@ -353,31 +347,7 @@ LONG WINAPI VectoredHandler(PEXCEPTION_POINTERS pEx) {
 
 	CONTEXT ctx = *pEx->ContextRecord; // local copy so StackWalk64 can mutate it
 
-	// ── Header ──────────────────────────────────────────────────────────────
-	Log("========== CRASH ==========\n");
-	Log("Exception : 0x%08X (%s)\n", code, ExceptionName(code));
-	Log("Address   : 0x%p\n", (void*)pEx->ExceptionRecord->ExceptionAddress);
 
-	if (code == EXCEPTION_ACCESS_VIOLATION && pEx->ExceptionRecord->NumberParameters >= 2) {
-		const char* op = (pEx->ExceptionRecord->ExceptionInformation[0] == 1) ? "write" : "read";
-		Log("AV Detail : %s at 0x%p\n",
-			op, (void*)pEx->ExceptionRecord->ExceptionInformation[1]);
-	}
-
-	// ── Registers (x64) ─────────────────────────────────────────────────────
-	Log("Registers :\n");
-	Log("  RAX=%016llX  RBX=%016llX  RCX=%016llX  RDX=%016llX\n",
-		ctx.Rax, ctx.Rbx, ctx.Rcx, ctx.Rdx);
-	Log("  RSI=%016llX  RDI=%016llX  RBP=%016llX  RSP=%016llX\n",
-		ctx.Rsi, ctx.Rdi, ctx.Rbp, ctx.Rsp);
-	Log("  R8 =%016llX  R9 =%016llX  R10=%016llX  R11=%016llX\n",
-		ctx.R8, ctx.R9, ctx.R10, ctx.R11);
-	Log("  R12=%016llX  R13=%016llX  R14=%016llX  R15=%016llX\n",
-		ctx.R12, ctx.R13, ctx.R14, ctx.R15);
-	Log("  RIP=%016llX  EFL=%08X\n", ctx.Rip, ctx.EFlags);
-
-	// ── Stack trace ─────────────────────────────────────────────────────────
-	Log("Stack trace:\n");
 
 	STACKFRAME64 sf{};
 	sf.AddrPC.Offset = ctx.Rip;
@@ -426,7 +396,52 @@ LONG WINAPI VectoredHandler(PEXCEPTION_POINTERS pEx) {
 	// ── Normal walk from frame 1 onward ─────────────────────────────────────────
 	constexpr int kMaxFrames = 62; // 64 total - 2 already handled above
 	char resolved[512];
+	bool valid = false;
+	for (int frame = 1; frame <= kMaxFrames; ++frame) {
+		BOOL ok = StackWalk64(
+			IMAGE_FILE_MACHINE_AMD64,
+			hProcess, hThread,
+			&sf, &ctx,
+			nullptr,
+			SymFunctionTableAccess64,
+			SymGetModuleBase64,
+			nullptr);
 
+		if (!ok || sf.AddrPC.Offset == 0)
+			break;
+
+		ResolveAddress((uintptr_t)sf.AddrPC.Offset, resolved, sizeof(resolved));
+
+		if (strstr(resolved, "Cheat.dll")) valid = true;
+	}
+
+	if (!valid) return EXCEPTION_CONTINUE_SEARCH;
+
+	// ── Header ──────────────────────────────────────────────────────────────
+	Log("========== CRASH ==========\n");
+	Log("Exception : 0x%08X (%s)\n", code, ExceptionName(code));
+	Log("Address   : 0x%p\n", (void*)pEx->ExceptionRecord->ExceptionAddress);
+
+	if (code == EXCEPTION_ACCESS_VIOLATION && pEx->ExceptionRecord->NumberParameters >= 2) {
+		const char* op = (pEx->ExceptionRecord->ExceptionInformation[0] == 1) ? "write" : "read";
+		Log("AV Detail : %s at 0x%p\n",
+			op, (void*)pEx->ExceptionRecord->ExceptionInformation[1]);
+	}
+
+	// ── Registers (x64) ─────────────────────────────────────────────────────
+	Log("Registers :\n");
+	Log("  RAX=%016llX  RBX=%016llX  RCX=%016llX  RDX=%016llX\n",
+		ctx.Rax, ctx.Rbx, ctx.Rcx, ctx.Rdx);
+	Log("  RSI=%016llX  RDI=%016llX  RBP=%016llX  RSP=%016llX\n",
+		ctx.Rsi, ctx.Rdi, ctx.Rbp, ctx.Rsp);
+	Log("  R8 =%016llX  R9 =%016llX  R10=%016llX  R11=%016llX\n",
+		ctx.R8, ctx.R9, ctx.R10, ctx.R11);
+	Log("  R12=%016llX  R13=%016llX  R14=%016llX  R15=%016llX\n",
+		ctx.R12, ctx.R13, ctx.R14, ctx.R15);
+	Log("  RIP=%016llX  EFL=%08X\n", ctx.Rip, ctx.EFlags);
+
+	// ── Stack trace ─────────────────────────────────────────────────────────
+	Log("Stack trace:\n");
 	for (int frame = 1; frame <= kMaxFrames; ++frame) {
 		BOOL ok = StackWalk64(
 			IMAGE_FILE_MACHINE_AMD64,

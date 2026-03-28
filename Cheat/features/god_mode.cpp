@@ -10,6 +10,27 @@ namespace features
 	void hLCBaseCombat_FireBeingHitEvent(void* _this, uint32_t attackeeId, void* attackResult) {
 		MoleMole::AvatarEntity* avatar = MoleMole::EntityManager::Instance()->GetAvatar();
 
+		Log("0x10:%s\n", (*(Il2CppString**)((uintptr_t)attackResult + 0x10))->ToCStr());
+		Log("0x18:%s\n", (*(Il2CppString**)((uintptr_t)attackResult + 0x18))->ToCStr());
+		Log("0x20:%s\n", (*(Il2CppString**)((uintptr_t)attackResult + 0x20))->ToCStr());
+		Log("0x48:%s\n", (*(Il2CppString**)((uintptr_t)attackResult + 0x48))->ToCStr());
+		Log("0x60:%s\n", (*(Il2CppString**)((uintptr_t)attackResult + 0x60))->ToCStr());
+
+		Log("0x120:%f\n", *(float*)((uintptr_t)attackResult + 0x120));
+		Log("0x13C:%f\n", *(float*)((uintptr_t)attackResult + 0x13C));
+		Log("0x140:%f\n", *(float*)((uintptr_t)attackResult + 0x140)); //
+		Log("0x158:%f\n", *(float*)((uintptr_t)attackResult + 0x158));
+		Log("0x1A8:%f\n", *(float*)((uintptr_t)attackResult + 0x1A8)); // bulletFlyTime
+
+		Log("0x244:%f\n", *(float*)((uintptr_t)attackResult + 0x244));
+		Log("0x248:%f\n", *(float*)((uintptr_t)attackResult + 0x248));
+		Log("0x250:%f\n", *(float*)((uintptr_t)attackResult + 0x250));
+		Log("0x258:%f\n", *(float*)((uintptr_t)attackResult + 0x258));
+		Log("0x280:%f\n", *(float*)((uintptr_t)attackResult + 0x280)); // 
+
+		//*(float*)((uintptr_t)attackResult + 0x140) = 100.f;
+		*(float*)((uintptr_t)attackResult + 0x280) = 100.f;
+
 		if (avatar &&
 			config.god_mode.enabled &&
 			attackeeId == avatar->GetRuntimeID())

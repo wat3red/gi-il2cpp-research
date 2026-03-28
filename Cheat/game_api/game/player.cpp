@@ -10,7 +10,7 @@ PlayerModule* MoleMole::PlayerModule::Instance() {
 
 uint32_t MoleMole::PlayerModule::GetCurSceneID() {
 	// class "private static MonoUIWaterMask ", "public UInt32 "
-	return *(uint32_t*)((uintptr_t)this + 0x18C); // 0x194, 0x1C4, 0x1F8
+	return *(uint32_t*)((uintptr_t)this + 0x1F8);
 }
 
 LoadingManager* MoleMole::LoadingManager::Instance() {

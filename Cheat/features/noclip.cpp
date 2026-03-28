@@ -36,9 +36,7 @@ namespace features
 
 		float delta = Unity::Time::GetDeltaTime();
 
-		dir = dir * config.noclip.speed * delta;
-		if (dir.Magnitude() > 0)
-			dir = dir.Normalize();
+		dir = dir * config.noclip.speed.GetValue() * delta;
 
 		MoleMole::EntityManager* entity_manager = MoleMole::EntityManager::Instance();
 		if (!entity_manager) return;

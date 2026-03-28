@@ -166,6 +166,7 @@ public:
 	struct KillAura {
 		ConfigVar<bool> enabled{ "kill_aura", "enabled", false };
 		ConfigVar<float> range{ "kill_aura", "range", 5.f };
+		ConfigVar<float> delay{ "kill_aura", "delay", 10.f };
 	} kill_aura;
 
 	struct AutoLoot {
@@ -191,10 +192,15 @@ public:
 		ConfigVar<float> teleport_delay{ "custom_teleports", "teleport_delay", 7.f };
 	} custom_teleports;
 
+	struct QuestTeleport {
+		ConfigVar<bool> enabled{ "quest_teleport", "enabled", false };
+		ConfigVar<ImGuiKey> teleport_hotkey{ "quest_teleport", "teleport_hotkey", ImGuiKey_V };
+	} quest_teleport;
+
 	struct Noclip {
 		ConfigVar<bool> enabled{ "noclip", "enabled", false };
-		ConfigVar<float> speed{ "noclip", "speed", 5.f };
-		ConfigVar<ImGuiKey> enable_hotkey{ "noclip", "enable_hotkey", ImGuiKey_V };
+		ConfigVar<float> speed{ "noclip", "speed", 10.f };
+		ConfigVar<ImGuiKey> enable_hotkey{ "noclip", "enable_hotkey", ImGuiKey_T };
 	} noclip;
 
 	struct SkipCutscene {

@@ -49,7 +49,7 @@ namespace features
 				if (entry.path().extension() == ".json") {
 					std::ifstream file(entry.path());
 					if (!file.is_open()) {
-						Log("Failed to open %s\n", entry.path().string().c_str());
+						Log("[LoadTeleportsFromDisk] Failed to open %s\n", entry.path().string().c_str());
 						continue;
 					}
 
@@ -69,22 +69,29 @@ namespace features
 						std::string desc = j.value("description", std::string(""));
 
 						// Get full relative path
-						std::string relative_path = fs::relative(entry.path(), dir).string();
+						std::string relative_path;
+						try {
+							relative_path = fs::relative(entry.path(), dir).string();
+						}
+						catch (const std::exception& e) {
+							Log("[LoadTeleportsFromDisk] Relative path error: %s\n", e.what());
+							continue;
+						}
 
 						teleports.push_back(Teleport(name, pos, desc, relative_path));
 						teleport_files.push_back(entry.path().string());
 
-						Log("Loaded teleport: %s from %s\n", name.c_str(), relative_path.c_str());
+						//Log("Loaded teleport: %s from %s\n", name.c_str(), relative_path.c_str());
 					}
 					catch (const json::exception& e) {
-						Log("JSON parse error in %s: %s\n", entry.path().string().c_str(), e.what());
+						Log("[LoadTeleportsFromDisk] JSON parse error in %s: %s\n", entry.path().string().c_str(), e.what());
 						continue;
 					}
 				}
 			}
 		}
 		catch (const fs::filesystem_error& e) {
-			Log("Filesystem error: %s\n", e.what());
+			Log("[LoadTeleportsFromDisk] Filesystem error: %s\n", e.what());
 		}
 
 		BuildCategoryTree();
@@ -171,37 +178,30 @@ namespace features
 
 			std::ofstream file(filepath);
 			if (!file.is_open()) {
-				Log("Failed to create teleport file: %s\n", filepath.c_str());
+				Log("[LoadTeleportsFromDisk] Failed to create teleport file: %s\n", filepath.c_str());
 				return;
 			}
 
 			file << j.dump(4);
 			file.close();
 
-			Log("Saved teleport: %s\n", teleport.name.c_str());
+			Log("[LoadTeleportsFromDisk] Saved teleport: %s\n", teleport.name.c_str());
 		}
 		catch (const std::exception& e) {
-			Log("Error saving teleport: %s\n", e.what());
+			Log("[LoadTeleportsFromDisk] Error saving teleport: %s\n", e.what());
 		}
 	}
 
 	void CustomTeleports::TeleportToPosition(const Unity::Vector3& position) {
 		MoleMole::EntityManager* entity_manager = MoleMole::EntityManager::Instance();
-		if (!entity_manager) {
-			Log("EntityManager not available\n");
-			return;
-		}
+		if (!entity_manager) return;
 
 		MoleMole::BaseEntity* avatar = entity_manager->GetAvatar();
-		if (!avatar) {
-			Log("Avatar not available\n");
-			return;
-		}
+		if (!avatar) return;
 
 		MoleMole::ActorUtils::SetAvatarPos(position);
 		MoleMole::ActorUtils::SyncEntityPos(entity_manager->GetAvatar(), 0, 0);
-
-		Log("Teleported to: %f, %f, %f\n", position.x, position.y, position.z);
+		//Log("Teleported to: %f, %f, %f\n", position.x, position.y, position.z);
 	}
 
 	void CustomTeleports::ReloadTeleports() {
@@ -214,13 +214,9 @@ namespace features
 
 	void CustomTeleports::OnUpdate() {
 		// Process deferred deletion after UI is done rendering
-		if (deferred_delete_index >= 0) {
-			ProcessDeferredDeletion();
-		}
+		if (deferred_delete_index >= 0) ProcessDeferredDeletion();
 
-		if (auto_teleport_running) {
-			ExecuteAutoTeleport();
-		}
+		if (auto_teleport_running) ExecuteAutoTeleport();
 	}
 
 	void CustomTeleports::BuildAutoTeleportQueue() {
@@ -250,8 +246,8 @@ namespace features
 				size_t tp_idx = auto_teleport_queue[auto_teleport_current];
 				if (tp_idx < teleports.size()) {
 					TeleportToPosition(teleports[tp_idx].position);
-					Log("Auto TP: %s (%zu/%zu)\n", teleports[tp_idx].name.c_str(),
-						auto_teleport_current + 1, auto_teleport_queue.size());
+					/*Log("Auto TP: %s (%zu/%zu)\n", teleports[tp_idx].name.c_str(),
+						auto_teleport_current + 1, auto_teleport_queue.size());*/
 				}
 
 				auto_teleport_current++;
@@ -259,7 +255,7 @@ namespace features
 			}
 			else {
 				auto_teleport_running = false;
-				Log("Auto TP completed\n");
+				//Log("Auto TP completed\n");
 			}
 		}
 	}
@@ -275,11 +271,11 @@ namespace features
 		try {
 			if (fs::exists(full_path)) {
 				fs::remove(full_path);
-				Log("Deleted teleport: %s from %s\n", tp.name.c_str(), full_path.c_str());
+				//Log("Deleted teleport: %s from %s\n", tp.name.c_str(), full_path.c_str());
 			}
 		}
 		catch (const fs::filesystem_error& e) {
-			Log("Error deleting file: %s\n", e.what());
+			Log("[LoadTeleportsFromDisk] Error deleting file: %s\n", e.what());
 		}
 
 		deferred_delete_index = -1;
@@ -361,7 +357,7 @@ namespace features
 					}
 				}
 				return true;
-			};
+				};
 
 			// Create tree node with category checkbox
 			bool category_checked = all_checked(child_node);

@@ -3,6 +3,8 @@
 
 #define COMMA ,
 
+RESOLVE_BY_OFFSET(MoleMole::GeneralMarkData*, MarkManager_GetNavigatingMark, 0x6A8AAD0, (MoleMole::MarkManager* _this, uint32_t scene))
+
 /*RESOLVE_BY_OFFSET(Il2CppObject*, LCBaseCombat_ChangeHP, 0xE0945B0, (Il2CppObject* _this, float value))
 RESOLVE_BY_OFFSET(Il2CppObject*, LCBaseCombat_ChangeHP1, 0xE097630, (Il2CppObject* _this, float value))
 RESOLVE_BY_OFFSET(Il2CppObject*, LCBaseCombat_UpdateCombatProp, 0xE0948C0, (Il2CppObject* _this, int32_t type, float value, int32_t state))*/

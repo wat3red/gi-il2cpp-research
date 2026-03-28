@@ -50,6 +50,7 @@ namespace Unity {
 			return *this;
 		}
 
+		Vector3(float v) : x(v), y(v), z(v) {}
 		Vector3(float x, float y, float z) : x(x), y(y), z(z) {}
 		Vector3() {}
 

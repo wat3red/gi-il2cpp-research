@@ -13,8 +13,7 @@ namespace version_constants
 		constexpr const char* item_module_class = "AKELJJJLBCH"; // public Void [A-Z]{11}\(UInt32 [A-Z]{11}, List<UInt32> [A-Z]{11}, Boolean [A-Z]{11}\);
 		constexpr const char* network_manager_class = "EBNFEFJIBAK"; // public ConfigChannel 
 		constexpr const char* talk_dialog_context_class = "PGLHFCFGJEM"; // private MonoTalkDialog 
-		
-
+		constexpr const char* mark_manager_class = "CLFOHLGDFAL"; // private Dictionary<UInt32,SceneScriptData> 
 		// private List<KeyValuePair<UInt32,Int32>> ComponentManager GOIEMHMONNA
 		//constexpr const char* base_entity_class = "HCJGEEJOFPB"; // public static List<RuntimePlatform
 		//constexpr const char* avatar_entity_class = "OBEOOPGNGLK"; // public Void [A-Z]{11}\(Dictionary<Int32,List<[A-Z]{11}>> [A-Z]{11}, Boolean [A-Z]{11}\)
