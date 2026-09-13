@@ -1,6 +1,6 @@
 # GICheat
 
-**Archived reverse-engineering case study** — an IL2CPP research toolkit built against Genshin Impact (Unity / IL2CPP), developed November 2025 → March 2026, frozen on game version **6.4**, and cleaned up afterwards as a portfolio artifact.
+**Archived reverse-engineering case study** — an IL2CPP research toolkit built against Genshin Impact (Unity / IL2CPP), developed November 2025 → March 2026, frozen on game version **6.4**, and cleaned up afterwards as a portfolio artifact. [MIT](LICENSE).
 
 This is **not** a usable product. Offsets and signatures are stale. Expect it not to run against a current client.
 
@@ -32,7 +32,7 @@ The interesting work is **not** the feature list. It is the layer underneath:
 - For **educational / reverse-engineering portfolio** purposes only.
 - Violates the game’s Terms of Service. Do **not** use this on a live account.
 - No support, no updates, no guarantee it builds or does anything useful today.
-- Third-party libraries under `Cheat/external/` and `Dumper/lib/` keep their own licenses.
+- First-party code is MIT (see [LICENSE](LICENSE)). Vendored third-party libraries keep their own licenses.
 
 ---
 
@@ -192,22 +192,13 @@ After freezing the research, the codebase was revised to remove the noise that a
 
 **Deleted dead weight**
 - Empty stub feature (`infinite_stamina`).
-- `KillAura` — ~900 lines of half-applied hooks and raw RVA probes; `OnInit` installed nothing useful.
+- `KillAura` — ~900 lines of half-applied hooks and raw RVA probes. Unsafe solution :(
 - Disabled `NetworkAnalyzer` and its empty UI.
 - `test_tu.cpp`, empty `TELEPORT_EXAMPLES/` tree.
 
 **Kept on purpose (research trail)**
 - Commented `RESOLVE_BY_*` lines in `functions_list.h` and class-anchor comments in `version_constants.h`. Each one records *how* the symbol was identified (dump regex, C# signature, previous RVA) and is reused when re-resolving after a patch.
 - Inline “how to find this again” notes next to version-locked offsets in feature code.
-
-**Correctness / hygiene**
-- `Mem::Signature` stored `const std::string& m_pattern` — a dangling reference when constructed from a temporary (which is exactly how the `RESOLVE_BY_*` macros call it). Now owned by value.
-- `GetMethodIsGenric` → `GetMethodIsGeneric`; also fixed pointer arithmetic (`method + 0x2F` vs `(uintptr_t)method + 0x2F`).
-- `AttackPhyisicalUnit` → `AttackPhysicalUnit`.
-- Removed hardcoded personal machine paths, placeholder IPs, and an unused 55k-element port vector.
-- Dropped unused includes and duplicate `windows.h`/`iostream` pulls in the Injector.
-
-What was *not* done on purpose: unifying the two IL2CPP type headers and the two signature scanners into a static library. That is the obvious next step and the main remaining structural debt.
 
 ---
 
@@ -238,4 +229,6 @@ What was *not* done on purpose: unifying the two IL2CPP type headers and the two
 
 ## License
 
-Code in this repository is provided without a license unless otherwise noted. Third-party components retain their upstream licenses (MIT for Dear ImGui, MinHook, and nlohmann/json).
+This repository is released under the [MIT License](LICENSE).
+
+Third-party components vendored under `Cheat/external/` and `Dumper/lib/` keep their upstream licenses (MIT for Dear ImGui, MinHook, and nlohmann/json). The MIT grant above covers first-party code only; it does not grant rights to any game assets, trademarks, or services referenced by this research.
