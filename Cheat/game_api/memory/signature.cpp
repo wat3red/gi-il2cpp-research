@@ -264,8 +264,8 @@ namespace Mem {
 		return hit;
 	}
 
-	// возвращает true если найден displacement
-	// outDisp — signed (может быть отрицательным)
+	// Returns true if a displacement was recovered from the instruction.
+	// outDisp is signed (can be negative).
 	static bool ResolveDispFromInstr(const uint8_t* code, int32_t& outDisp) {
 		if (!code) return false;
 

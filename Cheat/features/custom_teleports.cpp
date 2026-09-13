@@ -369,7 +369,7 @@ namespace features
 
 				bool category_checked = all_checked(child_node);
 
-				// Чекбокс
+				// Category select-all checkbox
 				if (config.custom_teleports.auto_teleport) {
 					if (ImGui::Checkbox("##select_all", &category_checked)) {
 						std::function<void(CategoryNode&, bool)> toggle_category =

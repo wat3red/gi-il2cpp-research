@@ -31,11 +31,6 @@ namespace features
 			if (waypoint.config == nullptr)
 				continue;
 
-			/*Log("waypoint.config + 0x20 = %s\n", (*(Unity::Vector3*)((uintptr_t)waypoint.config + 0x20)).ToString().c_str());
-			Log("waypoint.config + 0x2C = %s\n", (*(Unity::Vector3*)((uintptr_t)waypoint.config + 0x2C)).ToString().c_str());
-			Log("waypoint.config + 0x40 = %s\n", (*(Unity::Vector3*)((uintptr_t)waypoint.config + 0x40)).ToString().c_str());
-			Log("waypoint.config + 0x50 = %s\n", (*(Unity::Vector3*)((uintptr_t)waypoint.config + 0x50)).ToString().c_str());*/
-
 			Unity::Vector3 tran_pos = waypoint.config->GetTranPos();
 
 			if (waypoint.isUnlocked && !waypoint.isGroupLimit && !waypoint.isModelHidden)
@@ -64,8 +59,6 @@ namespace features
 		MoleMole::MapManager* map_manager = MoleMole::MapManager::Instance();
 		if (!map_manager) return;
 
-		//Log("targetSceneId = %d\n", targetSceneId);
-
 		Unity::Vector3 avatarPosition = MoleMole::ActorUtils::GetAvatarPos();
 		Log("avatarPosition = %s\n", avatarPosition.ToString().c_str());
 
@@ -75,24 +68,10 @@ namespace features
 
 		taskInfo = { true, 3, position, nearestWaypoint.sceneId, nearestWaypoint.waypointId };
 	}
-	bool IsNeedTransByServer(bool originalResult, Unity::Vector3& position) {
-		if (taskInfo.currentStage != 3)
-			return originalResult;
 
-		MoleMole::EntityManager* entityManager = MoleMole::EntityManager::Instance();
-		bool needServerTrans = entityManager->GetAvatar()->GetRelativePosition().Distance(taskInfo.targetPosition) > 60.0f;
-		if (needServerTrans)
-			Log("Stage 1. Distance is more than 60m. Performing server tp.\n");
-		else
-			Log("Stage 1. Distance is less than 60m. Performing fast tp.\n");
-
-		taskInfo.currentStage--;
-		return needServerTrans;
-	}
 	bool (*LoadingManager_NeedTransByServer)(MoleMole::LoadingManager* _this, uint32_t sceneId, Unity::Vector3 position);
 	bool hLoadingManager_NeedTransByServer(MoleMole::LoadingManager* _this, uint32_t sceneId, Unity::Vector3 position) {
-		//auto result = LoadingManager_NeedTransByServer(_this, sceneId, position);
-		//return IsNeedTransByServer(result, position);
+		// Always client-side: the staged server teleport path is unused.
 		return false;
 	}
 
@@ -114,14 +93,6 @@ namespace features
 
 		LoadingManager_PerformPlayerTransmit(_this, position, someEnum, someUint1, teleportType, someUint2, someBool);
 	}
-
-
-
-
-
-
-
-
 
 	void MapTeleport::DrawUI() {
 		ImGuiEx::Checkbox("Enable map teleport", config.map_teleport.enabled);
@@ -180,12 +151,12 @@ namespace features
 				relativePos.x, relativePos.z);
 
 			if (groundY < -99000000.0f) {
-				// Территория не загружена — телепортируем с текущей Y игрока,
-				// чтобы движок начал загружать чанки в точке назначения
+				// Area not streamed in — teleport using the player's current Y
+				// so the engine starts loading chunks at the destination.
 				Unity::Vector3 avatarPos = MoleMole::ActorUtils::GetAvatarPos();
 				worldPos.y = avatarPos.y;
 
-				// Запоминаем цель для корректировки после загрузки
+				// Remember the target so we can correct Y once the area loads.
 				pendingTeleport = { worldPos, 0, true };
 
 				MoleMole::ActorUtils::SetAvatarPos(worldPos);
@@ -243,14 +214,14 @@ namespace features
 	void (*SetPos)(void* _this, Unity::Vector3 targetPos, Unity::Vector3 lookAtPos, void* action);
 	void hSetPos(void* _this, Unity::Vector3 targetPos, Unity::Vector3 lookAtPos, void* action) {
 		if (taskInfo.waitingThread || config.map_teleport.enabled) {
-			// Подменяем координаты прямо перед выполнением перемещения
+			// Swap coordinates right before the move executes.
 			targetPos.x = taskInfo.targetPosition.x;
 			targetPos.y = taskInfo.targetPosition.y;
 			targetPos.z = taskInfo.targetPosition.z;
 
 			Log("Intercepted: Position modified to %f, %f, %f\n", targetPos.x, targetPos.y, targetPos.z);
 
-			// Сбрасываем флаги, чтобы не зациклиться
+			// Clear the flag so we do not loop on ourselves.
 			taskInfo.waitingThread = false;
 		}
 		SetPos(_this, targetPos, lookAtPos, action);
@@ -260,16 +231,16 @@ namespace features
 	PJEKOIAKMJM__OHDMJANMLLP_t Original = (PJEKOIAKMJM__OHDMJANMLLP_t)0;
 
 	MoleMole::ScenePointData* My_PJEKOIAKMJM__OHDMJANMLLP(MoleMole::ScenePointData* retstr, MoleMole::LoadingManager* _this, unsigned int sceneId, unsigned int pointId) {
-		// Вызываем оригинал, чтобы получить исходные данные (включая OKGFCEMNLNP)
+		// Call the original first so the struct (including OKGFCEMNLNP) is filled in.
 		MoleMole::ScenePointData result;
 		Original(&result, _this, sceneId, pointId);
 
-		// Подменяем позицию, если нужно
+		// Override the teleport target when this is our scene.
 		if (sceneId == taskInfo.sceneId) {
 			result.config->GetTranPos() = taskInfo.targetPosition;
 		}
 
-		// Копируем результат в выходной параметр (как это делает оригинал)
+		// Copy into the out-parameter, matching the original's return style.
 		*retstr = result;
 		return retstr;
 	}

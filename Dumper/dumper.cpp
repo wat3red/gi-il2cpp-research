@@ -41,7 +41,7 @@ namespace Dumper {
 				out += '_';
 		}
 
-		// не может начинаться с цифры
+		// Prefix with '_' if the identifier starts with a digit
 		if (isdigit((unsigned char)out[0]))
 			out = "_" + out;
 
@@ -115,7 +115,7 @@ namespace Dumper {
 				// If the method itself is generic (e.g. "T GetComponent<T>()"),
 				// we cannot resolve T. Skip it.
 				
-				if (Il2Cpp::GetMethodIsGenric(method)) continue;
+				if (Il2Cpp::GetMethodIsGeneric(method)) continue;
 
 				// Check Return Type
 				Il2CppType* retType = Il2Cpp::method_get_return_type(method);
@@ -359,7 +359,7 @@ namespace Dumper {
 				Il2CppType* fType = Il2Cpp::field_get_type(field);
 				if (!fType) continue;
 
-				// Only strict dependency is VALUETYPE. 
+				// Only strict dependency is VALUETYPE.
 				// CLASS/GENERICINST are usually pointers, so forward decl is enough.
 				if (fType->type == IL2CPP_TYPE_VALUETYPE) {
 					Il2CppClass* fieldClass = Il2Cpp::class_from_type(fType);
@@ -371,7 +371,7 @@ namespace Dumper {
 				iter = nullptr;
 				while (MethodInfo* method = Il2Cpp::class_get_methods(cls, &iter))
 				{
-					if (Il2Cpp::GetMethodIsGenric(method)) continue;
+					if (Il2Cpp::GetMethodIsGeneric(method)) continue;
 
 					// Helper to check and visit type
 					auto tryVisitType = [&](Il2CppType* t) {

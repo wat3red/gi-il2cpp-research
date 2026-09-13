@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -164,13 +164,12 @@
     <ClInclude Include="features\features.h" />
     <ClInclude Include="features\game_speed.h" />
     <ClInclude Include="features\god_mode.h" />
-    <ClInclude Include="features\infinite_stamina.h" />
-    <ClInclude Include="features\kill_aura.h" />
     <ClInclude Include="features\map_teleport.h" />
-    <ClInclude Include="features\network_analyzer.h" />
     <ClInclude Include="features\noclip.h" />
     <ClInclude Include="features\quest_teleport.h" />
     <ClInclude Include="features\skip_cutscene.h" />
+    <ClInclude Include="crash_handler.h" />
+    <ClInclude Include="..\Common\network_blocker.h" />
     <ClInclude Include="game_api\game\proto.h" />
     <ClInclude Include="game_api\memory\offset_db.h" />
     <ClInclude Include="game_api\game\entities.h" />
@@ -224,13 +223,12 @@
     <ClCompile Include="features\features.cpp" />
     <ClCompile Include="features\game_speed.cpp" />
     <ClCompile Include="features\god_mode.cpp" />
-    <ClCompile Include="features\infinite_stamina.cpp" />
-    <ClCompile Include="features\kill_aura.cpp" />
     <ClCompile Include="features\map_teleport.cpp" />
-    <ClCompile Include="features\network_analyzer.cpp" />
     <ClCompile Include="features\noclip.cpp" />
     <ClCompile Include="features\quest_teleport.cpp" />
     <ClCompile Include="features\skip_cutscene.cpp" />
+    <ClCompile Include="crash_handler.cpp" />
+    <ClCompile Include="..\Common\network_blocker.cpp" />
     <ClCompile Include="game_api\game\entities.cpp" />
     <ClCompile Include="game_api\game\map.cpp" />
     <ClCompile Include="game_api\game\player.cpp" />

@@ -163,12 +163,6 @@ public:
 		ConfigVar<bool> enabled{ "god_mode", "enabled", false };
 	} god_mode;
 
-	struct KillAura {
-		ConfigVar<bool> enabled{ "kill_aura", "enabled", false };
-		ConfigVar<float> range{ "kill_aura", "range", 5.f };
-		ConfigVar<float> delay{ "kill_aura", "delay", 10.f };
-	} kill_aura;
-
 	struct AutoLoot {
 		ConfigVar<bool> enabled{ "auto_loot", "enabled", false };
 		ConfigVar<bool> treasures{ "auto_loot", "treasures", false };

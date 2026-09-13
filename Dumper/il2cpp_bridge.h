@@ -46,7 +46,7 @@ namespace Il2Cpp {
 	//uint8_t GetMethodParamCount(MethodInfo* method);
 	int16_t GetMethodSlot(MethodInfo* method);
 	uint16_t GetMethodFlags(MethodInfo* method);
-	bool GetMethodIsGenric(MethodInfo* method);
+	bool GetMethodIsGeneric(MethodInfo* method);
 	uintptr_t GetMethodPointer(MethodInfo* method);
 
 	// Formatter

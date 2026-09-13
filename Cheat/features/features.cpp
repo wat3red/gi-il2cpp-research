@@ -8,10 +8,8 @@
 #include "noclip.h"
 #include "god_mode.h"
 #include "skip_cutscene.h"
-#include "kill_aura.h"
 #include "game_speed.h"
 #include "costume_changer.h"
-#include "network_analyzer.h"
 
 #include "features.h"
 #include <game_api/include.h>
@@ -45,10 +43,8 @@ void features::InitAllFeatures() {
 	all_features.push_back(new Noclip());
 	all_features.push_back(new GodMode());
 	all_features.push_back(new SkipCutscene());
-	all_features.push_back(new KillAura());
 	all_features.push_back(new GameSpeed());
 	all_features.push_back(new CostumeChanger());
-	//all_features.push_back(new NetworkAnalyzer());
 
 	for (Feature* feature : all_features) {
 		feature->OnInit();

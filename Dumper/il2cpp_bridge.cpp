@@ -89,9 +89,9 @@ namespace Il2Cpp
 		return *(uint16_t*)((uintptr_t)method + 0x28);
 	}
 
-	bool GetMethodIsGenric(MethodInfo* method) {
+	bool GetMethodIsGeneric(MethodInfo* method) {
 		// 41 F6 46 ? ? 0F 84 ? ? ? ? 48 89 D7
-		return ((*(uint8_t*)(method + 0x2F) & 4) != 0);
+		return (*(uint8_t*)((uintptr_t)method + 0x2F) & 4) != 0;
 	}
 
 	uintptr_t GetMethodPointer(MethodInfo* method) {

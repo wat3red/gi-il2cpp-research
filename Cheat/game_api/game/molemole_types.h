@@ -8,7 +8,7 @@ namespace MoleMole {
 		Avatar = 1,
 		Monster = 2,
 		Bullet = 3,
-		AttackPhyisicalUnit = 4,
+		AttackPhysicalUnit = 4,
 		AOE = 5,
 		Camera = 6,
 		EnviroArea = 7,

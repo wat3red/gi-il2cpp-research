@@ -153,8 +153,9 @@
     <ClCompile Include="lib\minhook\src\hook.c" />
     <ClCompile Include="lib\minhook\src\trampoline.c" />
     <ClCompile Include="memory\signature.cpp" />
-    <ClCompile Include="test_tu.cpp" />
     <ClCompile Include="utils.cpp" />
+    <ClCompile Include="..\Common\network_blocker.cpp" />
+    <ClInclude Include="..\Common\network_blocker.h" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="common.h" />

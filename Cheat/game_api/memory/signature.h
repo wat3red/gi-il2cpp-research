@@ -21,7 +21,7 @@ namespace Mem {
         void Parse(const std::string& pattern);
 
     private:
-        const std::string& m_pattern;
+        std::string m_pattern;
         std::vector<uint8_t> m_bytes;
         std::vector<uint8_t> m_mask; // 0xFF = match, 0x00 = wildcard
     };

@@ -7,7 +7,7 @@ namespace features
 	static std::unordered_set<DWORD> g_local_threads;
 	static SRWLOCK g_thread_lock = SRWLOCK_INIT;
 
-	// Ќовые переменные дл€ отслеживани€ времени
+	// Accumulated game-time state used for speed scaling
 	static LARGE_INTEGER g_last_real_time = {};
 	static LARGE_INTEGER g_accumulated_game_time = {};
 	static bool g_time_initialized = false;
